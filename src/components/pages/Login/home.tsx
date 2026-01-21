@@ -8,23 +8,23 @@ const Home: React.FC = () => {
   
 const features = [
   {
-    title: "Secure File Storage",
-    description: "Your files are encrypted and protected with enterprise-grade security.",
+    title: "Secure Encryption",
+    description: "Enterprise-grade security measures keeps your files completely private and secure. Your data, your rules.",
     icon: <ShieldCheck size={32} className="text-blue-500" />,
   },
   {
-    title: "File and Folder Organization",
-    description: "Organize your files with an intuitive folder structure.",
+    title: "Smart Organization",
+    description: "Intuitive folder system with powerful search. Find anything in seconds, not hours.",
     icon: <Folder size={32} className="text-blue-500" />,
   },
   {
-    title: "Easy File Sharing",
-    description: "Share files and folders securely.",
+    title: "Seamless Collaboration",
+    description: "Share files with controlled permissions. Work together efficiently without compromising security.",
     icon: <Share2 size={32} className="text-blue-500" />,
   },
   {
-    title: "Access Anywhere",
-    description: "Access your files from any device.",
+    title: "Universal Access",
+    description: "Your entire digital workspace in your pocket. Access, sync, and work from any device, anywhere.",
     icon: <Globe size={32} className="text-blue-500" />,
   },
 ];
@@ -34,16 +34,16 @@ const features = [
 
   <Navbar />
 
-  <main className="flex-1 w-full py-[clamp(40px,8vw,80px)]">
+  <main className="flex-1 w-full py-[clamp(60px,10vw,100px)]">
 
     {/* Hero Section */}
-    <section className="text-center mb-[clamp(60px,10vw,100px)] px-[clamp(20px,4vw,40px)]">
+    <section className="text-center mb-[clamp(100px,15vw,140px)] px-[clamp(20px,4vw,40px)]">
       <div className="max-w-[800px] mx-auto">
-        <h1 className="text-[clamp(32px,6vw,56px)] font-bold text-[var(--text-primary)] leading-tight mb-[clamp(20px,4vw,30px)] transition-colors">
-          Secure Cloud Storage For All Your Files.
+        <h1 className="text-[clamp(32px,6vw,56px)] font-bold text-[var(--text-primary)] leading-tight mb-[clamp(40px,6vw,48px)] transition-colors">
+          Secure Cloud Storage For All Your Files
         </h1>
 
-        <p className="text-[clamp(16px,3vw,20px)] text-[var(--text-secondary)] max-w-[600px] mx-auto mb-[clamp(30px,5vw,40px)] leading-relaxed transition-colors">
+        <p className="text-[clamp(16px,3vw,20px)] text-[var(--text-secondary)] max-w-[600px] mx-auto mb-[clamp(60px,8vw,72px)] leading-relaxed transition-colors">
           Store, share, and organize your digital life seamlessly from anywhere.
           Access your documents, photos, and videos on any device with SupFile.
         </p>
@@ -68,22 +68,31 @@ const features = [
     </section>
 
     {/* Features Section */}
-    <section
-      className="grid gap-[clamp(20px,3vw,40px)]
-                 px-[clamp(20px,4vw,40px)]
-                 grid-cols-1
-                 sm:grid-cols-2
-                 lg:grid-cols-3
-                 xl:grid-cols-4"
-    >
+    <section className="px-[clamp(20px,4vw,40px)] mb-[clamp(100px,15vw,140px)]">
+      <div className="text-center max-w-[800px] mx-auto mb-[clamp(80px,10vw,100px)]">
+        <h2 className="text-[clamp(28px,5vw,40px)] font-bold text-[var(--text-primary)] leading-tight mb-[clamp(32px,4vw,40px)] transition-colors">
+          Everything You Need, Nothing You Don't
+        </h2>
+        <p className="text-[clamp(16px,3vw,18px)] text-[var(--text-secondary)] max-w-[600px] mx-auto leading-relaxed transition-colors">
+          Experience cloud storage that just works. Simple, secure, and accessible; exactly what modern productivity demands.
+        </p>
+      </div>
+      
+      <div
+        className="grid gap-[clamp(40px,5vw,56px)]
+                   grid-cols-1
+                   sm:grid-cols-2
+                   md:grid-cols-3
+                   lg:grid-cols-4"
+      >
       {features.map((feature, index) => (
         <div
           key={index}
           className="bg-[var(--card-bg)]
                      border border-[var(--border-color)]
                      rounded-2xl
-                     p-[clamp(24px,3vw,40px)]
-                     min-h-[320px]
+                     p-[clamp(40px,5vw,56px)]
+                     min-h-[360px]
                      flex flex-col justify-between
                      text-center
                      shadow-[0_10px_30px_var(--shadow-color)]
@@ -93,7 +102,7 @@ const features = [
                      hover:shadow-[0_20px_40px_var(--shadow-color)]"
         >
           <div
-            className="mx-auto mb-[clamp(16px,3vw,24px)]
+            className="mx-auto mb-[clamp(24px,3vw,32px)]
                        flex items-center justify-center
                        w-[clamp(50px,8vw,70px)]
                        h-[clamp(50px,8vw,70px)]
@@ -105,7 +114,7 @@ const features = [
             {feature.icon}
           </div>
 
-          <h3 className="text-[clamp(16px,2.5vw,20px)] font-semibold text-[var(--text-primary)] mb-[clamp(10px,2vw,16px)] transition-colors">
+          <h3 className="text-[clamp(16px,2.5vw,20px)] font-semibold text-[var(--text-primary)] mb-[clamp(20px,3vw,24px)] transition-colors">
             {feature.title}
           </h3>
 
@@ -114,10 +123,11 @@ const features = [
           </p>
         </div>
       ))}
-    </section>
-  </main>
+    </div>
+  </section>
+</main>
 
-  <Footer />
+<Footer />
 </div>
 
   );
