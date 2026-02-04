@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Folder, Share2, Globe } from "lucide-react";
-import Navbar from '../../layouts/navbar';
-import Footer from '../../layouts/footer';
+import Navbar from './layouts/navbar';
+import Footer from './layouts/footer';
 
 const Home: React.FC = () => {
   
