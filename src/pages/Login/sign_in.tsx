@@ -202,7 +202,7 @@ const SignIn: React.FC = () => {
           >
             Don&apos;t have an account?{" "}
             <Link
-              to="/signup"
+              to="/register"
               className="
                 font-semibold
                 text-[var(--accent-color)]

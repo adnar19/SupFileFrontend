@@ -205,7 +205,7 @@ const SignUp: React.FC = () => {
           >
             Already have an account?{" "}
             <Link
-              to="/signin"
+              to="/login"
               className="
                 font-semibold
                 text-[var(--accent-color)]
