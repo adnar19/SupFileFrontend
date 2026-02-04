@@ -71,13 +71,13 @@ const Navbar: React.FC = () => {
             {isDropdownOpen && (
               <div className="absolute top-[calc(100%+8px)] right-0 sm:right-0 -right-12 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-[0_4px_20px_var(--shadow-color)] min-w-[120px] sm:min-w-[150px] z-[1000] overflow-hidden animate-[dropdownSlide_0.2s_ease]">
                 <Link 
-                  to="/signin" 
+                  to="/login" 
                   className="block px-4 py-3 text-[var(--text-primary)] no-underline text-sm font-medium transition-all duration-200 border-b border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)]"
                 >
                   Sign In
                 </Link>
                 <Link 
-                  to="/signup" 
+                  to="/register" 
                   className="block px-4 py-3 text-[var(--text-primary)] no-underline text-sm font-medium transition-all duration-200 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)]"
                 >
                   Sign Up
