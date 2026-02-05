@@ -1,8 +1,37 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
+import useAuth from "../../hooks/useAuth";
+import { toast } from "react-toastify";
+import { Signin } from "../../services/auth"
+import { SyncLoader } from "react-spinners";
 
 const Login: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth();
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loginLoading, setLoginLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    try {
+      setLoginLoading(true);
+      await Signin(email, password);
+    } catch (err) {
+      toast.error('Invalid email or password');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      toast.success('Welcome');
+      navigate('/');
+    }
+  }, [isAuthenticated, loading]);
   return (
     <div
       className="  h-screen
@@ -46,7 +75,7 @@ const Login: React.FC = () => {
           {/* Title */}
           <h2
             className="
-              text-center font-bold leading-tight
+              text-center font-semibold leading-tight
               text-[clamp(18px,4vw,20px)]
               text-[var(--text-primary)]
               mb-[clamp(24px,5vw,28px)]
@@ -63,6 +92,7 @@ const Login: React.FC = () => {
               gap-[clamp(16px,3vw,20px)]
               mb-[clamp(18px,5vw,24px)]
             "
+            onSubmit={handleSubmit}
           >
             <div className="relative">
               <input
@@ -84,6 +114,8 @@ const Login: React.FC = () => {
                   focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
                   placeholder:text-[var(--text-tertiary)]
                 "
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
@@ -107,13 +139,15 @@ const Login: React.FC = () => {
                   focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
                   placeholder:text-[var(--text-tertiary)]
                 "
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
             {/* Submit Button */}
             <button
               type="submit"
-              className="
+              className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
                 bg-[var(--accent-color)]
@@ -126,9 +160,15 @@ const Login: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-              "
+                ${loginLoading && "cursor-not-allowed"}
+              `}
             >
-              Sign In
+              {loginLoading ? (
+                <SyncLoader color="#fff" loading={loginLoading} />
+              ) : (
+                ' Sign In'
+              )}
+
             </button>
           </form>
 
@@ -163,10 +203,10 @@ const Login: React.FC = () => {
               max-[480px]:flex-col
             "
           >
-            
-              <button
-                key="Google"
-                className="
+
+            <button
+              key="Google"
+              className="
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -182,14 +222,14 @@ const Login: React.FC = () => {
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
                 "
-              >
-                <GoogleIcon />
-                <span>
+            >
+              <GoogleIcon />
+              <span>
 
                 Google
-                </span>
-              </button>
-          
+              </span>
+            </button>
+
           </div>
 
           {/* Signup */}

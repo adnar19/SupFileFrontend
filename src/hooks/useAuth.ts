@@ -7,7 +7,6 @@ const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [token, setToken] = useState<string | undefined>(Cookies.get('token'));
-  const isAuthorized = Cookies.get('isAuthorized');
 
   useEffect(() => {
     const verifyAdmin = async () => {
@@ -48,7 +47,7 @@ const useAuth = () => {
     return () => clearInterval(interval);
   }, [token]);
 
-  return { isAuthenticated, loading, isAuthorized };
+  return { isAuthenticated, loading };
 };
 
 export default useAuth;
