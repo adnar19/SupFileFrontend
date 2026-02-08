@@ -5,6 +5,9 @@ import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signin } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
+import { auth, googleProvider } from "../../services/firebase";
+import { signInWithPopup } from "firebase/auth";
+import Cookies from "js-cookie";
 
 const Login: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -25,7 +28,20 @@ const Login: React.FC = () => {
       setLoginLoading(false);
     }
   };
-
+  const handleGoogleLogin = async () => {
+    try {
+      setLoginLoading(true);
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const token = await user.getIdToken();
+      Cookies.set("token", token, { expires: 15 });
+    } catch (error) {
+      console.error(error);
+      toast.error("Google authentication failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
   useEffect(() => {
     if (!loading && isAuthenticated) {
       toast.success('Welcome');
@@ -205,6 +221,7 @@ const Login: React.FC = () => {
           >
 
             <button
+              onClick={handleGoogleLogin}
               key="Google"
               className="
                   flex items-center justify-center space-x-1
