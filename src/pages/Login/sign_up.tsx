@@ -5,6 +5,8 @@ import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
+import { signInWithPopup } from "firebase/auth";
+import { auth, googleProvider } from "../../services/firebase";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -33,6 +35,22 @@ const SignUp: React.FC = () => {
     }
   };
 
+  const handleGoogleSignup = async () => {
+    try {
+      setSignupLoading(true);
+
+      await signInWithPopup(auth, googleProvider);
+      toast.success("Account created with Google!");
+      navigate("/");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Google registration failed");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!loading && isAuthenticated) {
       toast.success('Account created successfully');
@@ -43,19 +61,22 @@ const SignUp: React.FC = () => {
   return (
     <div
       className="
-        min-h-screen flex items-center justify-center
+        h-screen flex items-center justify-center
         px-[clamp(20px,4vw,40px)]
+        py-[clamp(20px,4vw,40px)]
         bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)]
         transition-colors duration-300
       "
     >
-      <div className="w-full max-w-[480px]">
+      <div className="w-full h-full max-w-[480px] ">
         <div
           className="
+          max-h-full overflow-y-auto 
             bg-[var(--card-bg)]
             border border-[var(--border-color)]
             rounded-[20px]
-            p-[clamp(32px,6vw,48px)]
+             px-[clamp(32px,6vw,48px)]
+            py-[clamp(12px,3vw,24px)]
             shadow-[0_20px_40px_var(--shadow-color)]
             transition-all duration-300
             hover:-translate-y-0.5
@@ -73,24 +94,24 @@ const SignUp: React.FC = () => {
             "
           >
             <img
-              src="/logo.png"
+              src="./../logo.jpg"
               alt="SupFile"
               className="w-[clamp(120px,20vw,180px)] mx-auto object-contain"
             />
           </Link>
 
           {/* Title */}
-          <h1
+          <h2
             className="
-              text-center font-bold leading-tight
-              text-[clamp(24px,5vw,32px)]
+              text-center font-semibold leading-tight
+             text-[clamp(18px,4vw,20px)]
               text-[var(--text-primary)]
-              mb-[clamp(12px,3vw,16px)]
+              mb-[clamp(24px,5vw,28px)]
               transition-colors duration-300
             "
           >
             Create an account
-          </h1>
+          </h2>
 
           <p
             className="
@@ -110,7 +131,7 @@ const SignUp: React.FC = () => {
             className="
               flex flex-col
               gap-[clamp(16px,3vw,20px)]
-              mb-[clamp(24px,5vw,32px)]
+              mb-[clamp(18px,5vw,24px)]
             "
             onSubmit={handleSubmit}
           >
@@ -245,7 +266,7 @@ const SignUp: React.FC = () => {
           <div
             className="
               relative text-center
-              my-[clamp(24px,5vw,32px)]
+               my-[clamp(18px,5vw,24px)]
             "
           >
             <span
@@ -268,11 +289,12 @@ const SignUp: React.FC = () => {
             className="
               flex flex-wrap justify-center
               gap-[clamp(12px,3vw,16px)]
-              mb-[clamp(24px,5vw,32px)]
+             mb-[clamp(18px,5vw,24px)]
               max-[480px]:gap-[clamp(8px,2vw,12px)]
             "
           >
             <button
+              onClick={handleGoogleSignup}
               key="Google"
               className="
                   flex items-center justify-center space-x-1
