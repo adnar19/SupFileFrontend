@@ -32,7 +32,7 @@ const Navbar: React.FC = () => {
         
         {/* Logo */}
         <Link 
-          to="/" 
+          to="/home" 
           className="flex items-center gap-3 no-underline transition-transform duration-200 hover:scale-[1.02]"
         >
           <img 
