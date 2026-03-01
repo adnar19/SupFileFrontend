@@ -45,7 +45,7 @@ const Login: React.FC = () => {
   useEffect(() => {
     if (!loading && isAuthenticated) {
       toast.success('Welcome');
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, loading]);
   return (
@@ -73,7 +73,7 @@ const Login: React.FC = () => {
         >
           {/* Logo */}
           <Link
-            to="/"
+            to="/home"
             className="
               block text-center no-underline
               mb-[clamp(18px,5vw,24px)]

@@ -18,7 +18,9 @@ export const Signin = async (email: string, password: string) => {
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
-            if (error.response?.status === 401) {
+            if (error.response?.status !== undefined &&
+                error.response.status >= 400 &&
+                error.response.status < 500) {
                 toast.error(
                     error.response.data?.message
                 );
