@@ -3,10 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
-import { Signup } from "../../services/auth";
+import { Signup, GoogleSignup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../services/firebase";
+import axios from "axios";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -39,9 +40,19 @@ const SignUp: React.FC = () => {
     try {
       setSignupLoading(true);
 
-      await signInWithPopup(auth, googleProvider);
-      toast.success("Account created with Google!");
-      navigate("/");
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      const token = await user.getIdToken();
+      console.log(token);
+      
+      const response = await GoogleSignup(token);
+      console.log(response);
+      
+      if (response === 200) {
+        toast.success("Account created with Google!");
+        navigate("/");
+      }
 
     } catch (error) {
       console.error(error);
@@ -61,9 +72,8 @@ const SignUp: React.FC = () => {
   return (
     <div
       className="
-        h-screen flex items-center justify-center
+        h-full overflow-y-auto flex items-center justify-center
         px-[clamp(20px,4vw,40px)]
-        py-[clamp(20px,4vw,40px)]
         bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)]
         transition-colors duration-300
       "
@@ -71,7 +81,7 @@ const SignUp: React.FC = () => {
       <div className="w-full h-full max-w-[480px] ">
         <div
           className="
-          max-h-full overflow-y-auto 
+        my-[clamp(20px,4vw,40px)]
             bg-[var(--card-bg)]
             border border-[var(--border-color)]
             rounded-[20px]
