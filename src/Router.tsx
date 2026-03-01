@@ -13,12 +13,12 @@ const AppRouter: React.FC = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/" element={<PrivateRoute />}>
+        <Route path="/dashboard" element={<PrivateRoute />}>
         
         </Route>
         {/* this one is used if url doesn't exist */}
         <Route path="*" element={<NotFoundPage />} />
-        <Route path="home" element={<HomePage />} />
+        <Route path="/home" element={<HomePage />} />
       </Routes>
     </Router>
   );

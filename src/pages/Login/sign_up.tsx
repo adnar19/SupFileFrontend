@@ -11,10 +11,10 @@ import axios from "axios";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
-  const [fullName, setFullName] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [confirmPassword, setConfirmPassword] = useState<string>('');
+  const [fullName, setFullName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [signupLoading, setSignupLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
@@ -22,7 +22,7 @@ const SignUp: React.FC = () => {
     event.preventDefault();
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -30,7 +30,7 @@ const SignUp: React.FC = () => {
       setSignupLoading(true);
       await Signup(fullName, email, password);
     } catch (err) {
-      toast.error('Registration failed');
+      toast.error("Registration failed");
     } finally {
       setSignupLoading(false);
     }
@@ -45,15 +45,14 @@ const SignUp: React.FC = () => {
 
       const token = await user.getIdToken();
       console.log(token);
-      
+
       const response = await GoogleSignup(token);
       console.log(response);
-      
+
       if (response === 200) {
         toast.success("Account created with Google!");
         navigate("/");
       }
-
     } catch (error) {
       console.error(error);
       toast.error("Google registration failed");
@@ -64,8 +63,8 @@ const SignUp: React.FC = () => {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      toast.success('Account created successfully');
-      navigate('/');
+      toast.success("Account created successfully");
+      navigate("/");
     }
   }, [isAuthenticated, loading]);
 
@@ -95,7 +94,7 @@ const SignUp: React.FC = () => {
         >
           {/* Logo */}
           <Link
-            to="/"
+            to="/home"
             className="
               block text-center no-underline
               mb-[clamp(24px,5vw,40px)]
@@ -267,7 +266,7 @@ const SignUp: React.FC = () => {
               {signupLoading ? (
                 <SyncLoader color="#fff" loading={signupLoading} />
               ) : (
-                'Create Account'
+                "Create Account"
               )}
             </button>
           </form>
@@ -324,9 +323,7 @@ const SignUp: React.FC = () => {
                 "
             >
               <GoogleIcon />
-              <span>
-                Google
-              </span>
+              <span>Google</span>
             </button>
           </div>
 
