@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Upload, FolderPlus, Grid3X3, List, Home, Clock, Star, Trash2, HardDrive, File, Folder, Image, ChevronRight, Share2, User, LogOut, BarChart3, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { Search, Upload, FolderPlus, Grid3X3, List, Home, Clock, Star, Trash2, HardDrive, File, Folder, ChevronRight, Share2, User, LogOut, BarChart3, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface FileItem {
   id: string;

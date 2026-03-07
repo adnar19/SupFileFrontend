@@ -1,101 +1,101 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Upload, FolderPlus, Grid3X3, List, Home, Clock, Star, Trash2, HardDrive, File, Folder, Image, ChevronRight, Share2, User, LogOut, BarChart3, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { Search, Upload, FolderPlus, Grid3X3, List, Home, Clock, Star, Trash2, HardDrive, File, Folder, Image, ChevronRight, Share2, User, LogOut, BarChart3, Moon, Sun, RotateCcw } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface FileItem {
   id: string;
   name: string;
   type: 'folder' | 'file';
   fileType?: string;
-  modified: string;
+  deletedDate: string;
   size: string;
   icon: React.ReactNode;
   isFavorite: boolean;
 }
 
-const FileManager: React.FC = () => {
+const Trash: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const files: FileItem[] = [
+  const trashFiles: FileItem[] = [
     {
       id: '1',
-      name: 'Documents',
-      type: 'folder',
-      fileType: 'Folder',
-      modified: '2 hours ago',
-      size: '12.5 GB',
-      icon: <Folder className="w-5 h-5 text-blue-500" />,
+      name: 'old-project.zip',
+      type: 'file',
+      fileType: 'Archive',
+      deletedDate: '2 days ago',
+      size: '125.7 MB',
+      icon: <File className="w-5 h-5 text-gray-500" />,
       isFavorite: false
     },
     {
       id: '2',
-      name: 'Projects',
+      name: 'temp-folder',
       type: 'folder',
       fileType: 'Folder',
-      modified: '1 day ago',
-      size: '8.3 GB',
-      icon: <Folder className="w-5 h-5 text-purple-500" />,
-      isFavorite: true
+      deletedDate: '3 days ago',
+      size: '3.2 GB',
+      icon: <Folder className="w-5 h-5 text-gray-500" />,
+      isFavorite: false
     },
     {
       id: '3',
-      name: 'Images',
-      type: 'folder',
-      fileType: 'Folder',
-      modified: '3 days ago',
-      size: '24.7 GB',
-      icon: <Image className="w-5 h-5 text-green-500" />,
+      name: 'draft-report.docx',
+      type: 'file',
+      fileType: 'Word',
+      deletedDate: '1 week ago',
+      size: '856 KB',
+      icon: <File className="w-5 h-5 text-gray-500" />,
       isFavorite: false
     },
     {
       id: '4',
-      name: 'report.pdf',
-      type: 'file',
-      fileType: 'PDF',
-      modified: '5 hours ago',
-      size: '2.4 MB',
-      icon: <File className="w-5 h-5 text-red-500" />,
+      name: 'backup-images',
+      type: 'folder',
+      fileType: 'Folder',
+      deletedDate: '2 weeks ago',
+      size: '8.9 GB',
+      icon: <Folder className="w-5 h-5 text-gray-500" />,
       isFavorite: false
     },
     {
       id: '5',
-      name: 'presentation.pptx',
+      name: 'test-data.csv',
       type: 'file',
-      fileType: 'PowerPoint',
-      modified: '1 day ago',
-      size: '15.7 MB',
-      icon: <File className="w-5 h-5 text-orange-500" />,
-      isFavorite: true
+      fileType: 'CSV',
+      deletedDate: '3 weeks ago',
+      size: '2.1 MB',
+      icon: <File className="w-5 h-5 text-gray-500" />,
+      isFavorite: false
     }
   ];
 
   const sidebarItems = [
-    { icon: <File className="w-5 h-5" />, label: 'All Files', active: true, path: '/file-manager' },
+    { icon: <File className="w-5 h-5" />, label: 'All Files', active: false, path: '/file-manager' },
     { icon: <Clock className="w-5 h-5" />, label: 'Recent', active: false, path: '/recent' },
     { icon: <Star className="w-5 h-5" />, label: 'Favorites', active: false, path: '/favorites' },
-    { icon: <Trash2 className="w-5 h-5" />, label: 'Trash', active: false, path: '/trash' }
+    { icon: <Trash2 className="w-5 h-5" />, label: 'Trash', active: true, path: '/trash' }
   ];
 
   const storageUsed = 45.7;
   const storageTotal = 100;
 
-  const toggleFavorite = (id: string) => {
-    console.log('Toggle favorite for item:', id);
-    // Toggle favorite logic here
+  const handleRestore = (id: string) => {
+    console.log('Restore item:', id);
+    // Restore logic here
   };
 
-  const handleShare = (id: string) => {
-    console.log('Share item:', id);
-    // Share logic here
+  const handlePermanentDelete = (id: string) => {
+    console.log('Permanent delete item:', id);
+    // Permanent delete logic here
   };
 
-  const handleDelete = (id: string) => {
-    console.log('Delete item:', id);
-    // Delete logic here
+  const handleEmptyTrash = () => {
+    console.log('Empty trash');
+    // Empty trash logic here
   };
 
   const handleLogout = () => {
@@ -161,7 +161,15 @@ const FileManager: React.FC = () => {
           <header className="px-6 py-4" style={{ backgroundColor: 'var(--navbar-bg)', borderBottom: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold">File Manager</h1>
+                <h1 className="text-2xl font-bold">Trash</h1>
+                <button 
+                  className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
+                  style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+                  onClick={handleEmptyTrash}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Empty Trash</span>
+                </button>
               </div>
               
               <div className="flex items-center space-x-3">
@@ -170,25 +178,13 @@ const FileManager: React.FC = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
                     type="text"
-                    placeholder="Search files and folders..."
+                    placeholder="Search trash..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
                     style={{ backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}
                   />
                 </div>
-
-                {/* Upload Button */}
-                <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-                  <Upload className="w-4 h-4" />
-                  <span className="text-sm font-medium">Upload</span>
-                </button>
-
-                {/* New Folder Button */}
-                <button className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                  <FolderPlus className="w-4 h-4" />
-                  <span className="text-sm font-medium">New Folder</span>
-                </button>
 
                 {/* Theme Toggle */}
                 <button 
@@ -241,7 +237,8 @@ const FileManager: React.FC = () => {
               <Home className="w-4 h-4" />
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <span style={{ color: 'var(--text-primary)' }}>My Files</span>
+            <Trash2 className="w-4 h-4" />
+            <span style={{ color: 'var(--text-primary)' }}>Trash</span>
           </div>
 
           {/* Content Area */}
@@ -275,12 +272,12 @@ const FileManager: React.FC = () => {
                       <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
                       <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Type</th>
                       <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Size</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Modified</th>
+                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Deleted</th>
                       <th className="text-center p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {files.map((file) => (
+                    {trashFiles.map((file) => (
                       <tr className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
                         <td className="p-4">
                           <div className="flex items-center space-x-3">
@@ -290,52 +287,28 @@ const FileManager: React.FC = () => {
                         </td>
                         <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.fileType}</td>
                         <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.size}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.modified}</td>
+                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.deletedDate}</td>
                         <td className="p-4">
                           <div className="flex items-center justify-center space-x-2 pl-2">
-                            {/* Share - uniquement pour les fichiers */}
-                            <div className="w-6 flex justify-center">
-                              {file.type === 'file' && (
-                                <button
-                                  onClick={() => handleShare(file.id)}
-                                  className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                  style={{ color: 'var(--text-tertiary)' }}
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                            
-                            {/* Plot - pour tous les éléments */}
+                            {/* Restore */}
                             <div className="w-6 flex justify-center">
                               <button
-                                onClick={() => console.log('Plot item:', file.id)}
+                                onClick={() => handleRestore(file.id)}
                                 className="p-1.5 rounded transition-colors flex items-center justify-center"
                                 style={{ color: 'var(--text-tertiary)' }}
+                                title="Restore"
                               >
-                                <BarChart3 className="w-4 h-4" />
+                                <RotateCcw className="w-4 h-4" />
                               </button>
                             </div>
                             
-                            {/* Favorite - pour tous les éléments */}
+                            {/* Permanent Delete */}
                             <div className="w-6 flex justify-center">
                               <button
-                                onClick={() => toggleFavorite(file.id)}
-                                className={`p-1.5 rounded transition-colors flex items-center justify-center ${
-                                  file.isFavorite ? 'text-yellow-500' : ''
-                                }`}
-                                style={{ color: file.isFavorite ? '#eab308' : 'var(--text-tertiary)' }}
-                              >
-                                <Star className="w-4 h-4" fill={file.isFavorite ? 'currentColor' : 'none'} />
-                              </button>
-                            </div>
-                            
-                            {/* Delete - pour tous les éléments */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleDelete(file.id)}
+                                onClick={() => handlePermanentDelete(file.id)}
                                 className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
+                                style={{ color: '#ef4444' }}
+                                title="Delete permanently"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
@@ -349,12 +322,13 @@ const FileManager: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {files.map((file) => (
+                {trashFiles.map((file) => (
                   <div key={file.id} className="rounded-lg border p-4 transition-colors cursor-pointer" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
                     <div className="flex flex-col items-center space-y-2">
                       {file.icon}
                       <span className="text-sm font-medium text-center" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
                       <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{file.size}</span>
+                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{file.deletedDate}</span>
                     </div>
                   </div>
                 ))}
@@ -367,4 +341,4 @@ const FileManager: React.FC = () => {
   );
 };
 
-export default FileManager;
+export default Trash;
