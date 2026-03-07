@@ -3,88 +3,67 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
-import { Signup, GoogleSignup } from "../../services/auth";
+import { Signin } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
-import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../services/firebase";
-import axios from "axios";
+import { signInWithPopup } from "firebase/auth";
+import Cookies from "js-cookie";
 
-const SignUp: React.FC = () => {
+const Login: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
-  const [fullName, setFullName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [signupLoading, setSignupLoading] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loginLoading, setLoginLoading] = useState<boolean>(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
     try {
-      setSignupLoading(true);
-      await Signup(fullName, email, password);
+      setLoginLoading(true);
+      await Signin(email, password);
     } catch (err) {
-      toast.error("Registration failed");
+      toast.error('Invalid email or password');
     } finally {
-      setSignupLoading(false);
+      setLoginLoading(false);
     }
   };
-
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      setSignupLoading(true);
-
+      setLoginLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
       const user = result.user;
-
       const token = await user.getIdToken();
-      console.log(token);
-
-      const response = await GoogleSignup(token);
-      console.log(response);
-
-      if (response === 200) {
-        toast.success("Account created with Google!");
-        navigate("/");
-      }
+      Cookies.set("token", token, { expires: 15 });
     } catch (error) {
       console.error(error);
-      toast.error("Google registration failed");
+      toast.error("Google authentication failed");
     } finally {
-      setSignupLoading(false);
+      setLoginLoading(false);
     }
   };
-
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      toast.success("Account created successfully");
-      navigate("/");
+      toast.success('Welcome');
+      navigate('/dashboard');
     }
   }, [isAuthenticated, loading]);
-
   return (
     <div
-      className="
-        h-full overflow-y-auto flex items-center justify-center
+      className="  h-screen
+        flex items-center justify-center
         px-[clamp(20px,4vw,40px)]
         bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)]
         transition-colors duration-300
       "
     >
-      <div className="w-full h-full max-w-[480px] ">
+      <div className="w-full max-w-[480px]">
         <div
           className="
-        my-[clamp(20px,4vw,40px)]
             bg-[var(--card-bg)]
             border border-[var(--border-color)]
             rounded-[20px]
-             px-[clamp(32px,6vw,48px)]
+            px-[clamp(32px,6vw,48px)]
             py-[clamp(12px,3vw,24px)]
             shadow-[0_20px_40px_var(--shadow-color)]
             transition-all duration-300
@@ -97,13 +76,13 @@ const SignUp: React.FC = () => {
             to="/home"
             className="
               block text-center no-underline
-              mb-[clamp(24px,5vw,40px)]
+              mb-[clamp(18px,5vw,24px)]
               transition-transform duration-300
               hover:scale-105
             "
           >
             <img
-              src="./../logo.jpg"
+              src="./../logoo.jpg"
               alt="SupFile"
               className="w-[clamp(120px,20vw,180px)] mx-auto object-contain"
             />
@@ -113,27 +92,14 @@ const SignUp: React.FC = () => {
           <h2
             className="
               text-center font-semibold leading-tight
-             text-[clamp(18px,4vw,20px)]
+              text-[clamp(18px,4vw,20px)]
               text-[var(--text-primary)]
               mb-[clamp(24px,5vw,28px)]
               transition-colors duration-300
             "
           >
-            Create an account
+            Sign in to your account to access your files
           </h2>
-
-          <p
-            className="
-              text-center
-              text-[clamp(14px,3vw,16px)]
-              text-[var(--text-secondary)]
-              mb-[clamp(24px,5vw,32px)]
-              leading-relaxed
-              transition-colors duration-300
-            "
-          >
-            Enter your information to create your SupFile account
-          </p>
 
           {/* Form */}
           <form
@@ -144,31 +110,6 @@ const SignUp: React.FC = () => {
             "
             onSubmit={handleSubmit}
           >
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Full Name"
-                required
-                className="
-                  w-full
-                  px-[clamp(16px,3vw,20px)]
-                  py-[clamp(14px,3vw,16px)]
-                  rounded-xl
-                  border-2 border-[var(--border-color)]
-                  bg-[var(--bg-primary)]
-                  text-[var(--text-primary)]
-                  text-[clamp(14px,3vw,16px)]
-                  outline-none
-                  transition-all duration-300
-                  focus:border-[var(--accent-color)]
-                  focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
-                  placeholder:text-[var(--text-tertiary)]
-                "
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-
             <div className="relative">
               <input
                 type="email"
@@ -219,32 +160,7 @@ const SignUp: React.FC = () => {
               />
             </div>
 
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Confirm your password"
-                required
-                className="
-                  w-full
-                  px-[clamp(16px,3vw,20px)]
-                  py-[clamp(14px,3vw,16px)]
-                  rounded-xl
-                  border-2 border-[var(--border-color)]
-                  bg-[var(--bg-primary)]
-                  text-[var(--text-primary)]
-                  text-[clamp(14px,3vw,16px)]
-                  outline-none
-                  transition-all duration-300
-                  focus:border-[var(--accent-color)]
-                  focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
-                  placeholder:text-[var(--text-tertiary)]
-                "
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-
-            {/* Submit */}
+            {/* Submit Button */}
             <button
               type="submit"
               className={`
@@ -260,14 +176,15 @@ const SignUp: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${signupLoading && "cursor-not-allowed"}
+                ${loginLoading && "cursor-not-allowed"}
               `}
             >
-              {signupLoading ? (
-                <SyncLoader color="#fff" loading={signupLoading} />
+              {loginLoading ? (
+                <SyncLoader color="#fff" loading={loginLoading} />
               ) : (
-                "Create Account"
+                ' Sign In'
               )}
+
             </button>
           </form>
 
@@ -275,7 +192,7 @@ const SignUp: React.FC = () => {
           <div
             className="
               relative text-center
-               my-[clamp(18px,5vw,24px)]
+              my-[clamp(18px,5vw,24px)]
             "
           >
             <span
@@ -298,12 +215,13 @@ const SignUp: React.FC = () => {
             className="
               flex flex-wrap justify-center
               gap-[clamp(12px,3vw,16px)]
-             mb-[clamp(18px,5vw,24px)]
-              max-[480px]:gap-[clamp(8px,2vw,12px)]
+              mb-[clamp(18px,5vw,24px)]
+              max-[480px]:flex-col
             "
           >
+
             <button
-              onClick={handleGoogleSignup}
+              onClick={handleGoogleLogin}
               key="Google"
               className="
                   flex items-center justify-center space-x-1
@@ -323,11 +241,15 @@ const SignUp: React.FC = () => {
                 "
             >
               <GoogleIcon />
-              <span>Google</span>
+              <span>
+
+                Google
+              </span>
             </button>
+
           </div>
 
-          {/* Sign in */}
+          {/* Signup */}
           <div
             className="
               text-center
@@ -336,9 +258,9 @@ const SignUp: React.FC = () => {
               transition-colors
             "
           >
-            Already have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
-              to="/login"
+              to="/register"
               className="
                 font-semibold
                 text-[var(--accent-color)]
@@ -347,7 +269,7 @@ const SignUp: React.FC = () => {
                 hover:underline
               "
             >
-              Sign in
+              Sign up
             </Link>
           </div>
         </div>
@@ -356,4 +278,6 @@ const SignUp: React.FC = () => {
   );
 };
 
-export default SignUp;
+export default Login;
+
+
