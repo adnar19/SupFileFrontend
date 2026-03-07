@@ -17,7 +17,7 @@ const useAuth = () => {
       }
 
       try {
-        const response = await axios.get(`${API_URL}/verify`, {
+        const response = await axios.get(`${API_URL}/auth/check-token`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

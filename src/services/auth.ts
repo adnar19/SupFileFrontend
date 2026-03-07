@@ -11,7 +11,7 @@ export const Signin = async (email: string, password: string) => {
         });
 
         if (response.data.success) {
-            Cookies.set('token', response.data.token, { expires: 15 });
+            Cookies.set('token', response.data.data.token, { expires: 15 });
             return response.status;
         } else {
             toast.error(response.data.message)
