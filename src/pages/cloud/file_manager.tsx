@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, Upload, FolderPlus, Grid3X3, List, Home, Clock, Star, Trash2, HardDrive, File, Folder, Image, ChevronRight, Share2, User, LogOut, BarChart3, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface FileItem {
   id: string;
@@ -14,15 +14,45 @@ interface FileItem {
   isFavorite: boolean;
 }
 
-const Recent: React.FC = () => {
+const FileManager: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
 
-  const recentFiles: FileItem[] = [
+  const files: FileItem[] = [
     {
       id: '1',
+      name: 'Documents',
+      type: 'folder',
+      fileType: 'Folder',
+      modified: '2 hours ago',
+      size: '12.5 GB',
+      icon: <Folder className="w-5 h-5 text-blue-500" />,
+      isFavorite: false
+    },
+    {
+      id: '2',
+      name: 'Projects',
+      type: 'folder',
+      fileType: 'Folder',
+      modified: '1 day ago',
+      size: '8.3 GB',
+      icon: <Folder className="w-5 h-5 text-purple-500" />,
+      isFavorite: true
+    },
+    {
+      id: '3',
+      name: 'Images',
+      type: 'folder',
+      fileType: 'Folder',
+      modified: '3 days ago',
+      size: '24.7 GB',
+      icon: <Image className="w-5 h-5 text-green-500" />,
+      isFavorite: false
+    },
+    {
+      id: '4',
       name: 'report.pdf',
       type: 'file',
       fileType: 'PDF',
@@ -32,7 +62,7 @@ const Recent: React.FC = () => {
       isFavorite: false
     },
     {
-      id: '2',
+      id: '5',
       name: 'presentation.pptx',
       type: 'file',
       fileType: 'PowerPoint',
@@ -40,42 +70,12 @@ const Recent: React.FC = () => {
       size: '15.7 MB',
       icon: <File className="w-5 h-5 text-orange-500" />,
       isFavorite: true
-    },
-    {
-      id: '3',
-      name: 'budget.xlsx',
-      type: 'file',
-      fileType: 'Excel',
-      modified: '2 days ago',
-      size: '856 KB',
-      icon: <File className="w-5 h-5 text-green-500" />,
-      isFavorite: false
-    },
-    {
-      id: '4',
-      name: 'meeting-notes.docx',
-      type: 'file',
-      fileType: 'Word',
-      modified: '3 days ago',
-      size: '1.2 MB',
-      icon: <File className="w-5 h-5 text-blue-500" />,
-      isFavorite: false
-    },
-    {
-      id: '5',
-      name: 'design.sketch',
-      type: 'file',
-      fileType: 'Sketch',
-      modified: '4 days ago',
-      size: '45.3 MB',
-      icon: <File className="w-5 h-5 text-purple-500" />,
-      isFavorite: true
     }
   ];
 
   const sidebarItems = [
-    { icon: <File className="w-5 h-5" />, label: 'All Files', active: false, path: '/file-manager' },
-    { icon: <Clock className="w-5 h-5" />, label: 'Recent', active: true, path: '/recent' },
+    { icon: <File className="w-5 h-5" />, label: 'All Files', active: true, path: '/file-manager' },
+    { icon: <Clock className="w-5 h-5" />, label: 'Recent', active: false, path: '/recent' },
     { icon: <Star className="w-5 h-5" />, label: 'Favorites', active: false, path: '/favorites' },
     { icon: <Trash2 className="w-5 h-5" />, label: 'Trash', active: false, path: '/trash' }
   ];
@@ -161,7 +161,7 @@ const Recent: React.FC = () => {
           <header className="px-6 py-4" style={{ backgroundColor: 'var(--navbar-bg)', borderBottom: '1px solid var(--border-color)' }}>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold">Recent Files</h1>
+                <h1 className="text-2xl font-bold">File Manager</h1>
               </div>
               
               <div className="flex items-center space-x-3">
@@ -170,7 +170,7 @@ const Recent: React.FC = () => {
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                   <input
                     type="text"
-                    placeholder="Search recent files..."
+                    placeholder="Search files and folders..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
@@ -241,8 +241,7 @@ const Recent: React.FC = () => {
               <Home className="w-4 h-4" />
             </Link>
             <ChevronRight className="w-4 h-4" />
-            <Clock className="w-4 h-4" />
-            <span style={{ color: 'var(--text-primary)' }}>Recent Files</span>
+            <span style={{ color: 'var(--text-primary)' }}>My Files</span>
           </div>
 
           {/* Content Area */}
@@ -281,7 +280,7 @@ const Recent: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentFiles.map((file) => (
+                    {files.map((file) => (
                       <tr className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
                         <td className="p-4">
                           <div className="flex items-center space-x-3">
@@ -294,18 +293,20 @@ const Recent: React.FC = () => {
                         <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.modified}</td>
                         <td className="p-4">
                           <div className="flex items-center justify-center space-x-2 pl-2">
-                            {/* Share */}
+                            {/* Share - uniquement pour les fichiers */}
                             <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleShare(file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <Share2 className="w-4 h-4" />
-                              </button>
+                              {file.type === 'file' && (
+                                <button
+                                  onClick={() => handleShare(file.id)}
+                                  className="p-1.5 rounded transition-colors flex items-center justify-center"
+                                  style={{ color: 'var(--text-tertiary)' }}
+                                >
+                                  <Share2 className="w-4 h-4" />
+                                </button>
+                              )}
                             </div>
                             
-                            {/* Plot */}
+                            {/* Plot - pour tous les éléments */}
                             <div className="w-6 flex justify-center">
                               <button
                                 onClick={() => console.log('Plot item:', file.id)}
@@ -316,7 +317,7 @@ const Recent: React.FC = () => {
                               </button>
                             </div>
                             
-                            {/* Favorite */}
+                            {/* Favorite - pour tous les éléments */}
                             <div className="w-6 flex justify-center">
                               <button
                                 onClick={() => toggleFavorite(file.id)}
@@ -329,7 +330,7 @@ const Recent: React.FC = () => {
                               </button>
                             </div>
                             
-                            {/* Delete */}
+                            {/* Delete - pour tous les éléments */}
                             <div className="w-6 flex justify-center">
                               <button
                                 onClick={() => handleDelete(file.id)}
@@ -348,7 +349,7 @@ const Recent: React.FC = () => {
               </div>
             ) : (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {recentFiles.map((file) => (
+                {files.map((file) => (
                   <div key={file.id} className="rounded-lg border p-4 transition-colors cursor-pointer" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
                     <div className="flex flex-col items-center space-y-2">
                       {file.icon}
@@ -366,4 +367,4 @@ const Recent: React.FC = () => {
   );
 };
 
-export default Recent;
+export default FileManager;

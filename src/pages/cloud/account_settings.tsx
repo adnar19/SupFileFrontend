@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Home, ChevronRight, Settings, Camera, Mail, Lock, AlertTriangle, Moon, Sun } from 'lucide-react';
-import { useTheme } from '../../../contexts/ThemeContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const AccountSettings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
