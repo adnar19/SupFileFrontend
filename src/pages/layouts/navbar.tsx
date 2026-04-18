@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FolderPlus,
   LogOut,
@@ -16,6 +16,25 @@ const Navbar: React.FC = () => {
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  const getPageTitle = (path: string) => {
+    switch (path) {
+      case "/":
+      case "/dashboard":
+        return "All Files";
+      case "/recent":
+        return "Recent";
+      case "/favorites":
+        return "Favorites";
+      case "/trash":
+        return "Trash";
+      case "/account-settings":
+        return "Account Settings";
+      default:
+        return "SupFile";
+    }
+  };
 
   const handleLogout = () => {
     // Logout logic here
@@ -38,6 +57,8 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
+  const isActionPage = !["/trash", "/account-settings"].includes(location.pathname);
+
   return (
     <header
       className="px-6 py-4"
@@ -48,47 +69,53 @@ const Navbar: React.FC = () => {
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold">Favorite Files</h1>
+          <h1 className="text-2xl font-bold">
+            {getPageTitle(location.pathname)}
+          </h1>
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Search */}
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-              style={{ color: "var(--text-tertiary)" }}
-            />
-            <input
-              type="text"
-              placeholder="Search favorite files..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                border: "1px solid var(--border-color)",
-                color: "var(--text-primary)",
-              }}
-            />
-          </div>
+          {isActionPage && (
+            <>
+              {/* Search */}
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+                  style={{ color: "var(--text-tertiary)" }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search files..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
+                  style={{
+                    backgroundColor: "var(--bg-tertiary)",
+                    border: "1px solid var(--border-color)",
+                    color: "var(--text-primary)",
+                  }}
+                />
+              </div>
 
-          {/* Upload Button */}
-          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
-            <Upload className="w-4 h-4" />
-            <span className="text-sm font-medium">Upload</span>
-          </button>
+              {/* Upload Button */}
+              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+                <Upload className="w-4 h-4" />
+                <span className="text-sm font-medium">Upload</span>
+              </button>
 
-          {/* New Folder Button */}
-          <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
-            style={{
-              backgroundColor: "var(--bg-tertiary)",
-              color: "var(--text-primary)",
-            }}
-          >
-            <FolderPlus className="w-4 h-4" />
-            <span className="text-sm font-medium">New Folder</span>
-          </button>
+              {/* New Folder Button */}
+              <button
+                className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: "var(--bg-tertiary)",
+                  color: "var(--text-primary)",
+                }}
+              >
+                <FolderPlus className="w-4 h-4" />
+                <span className="text-sm font-medium">New Folder</span>
+              </button>
+            </>
+          )}
 
           {/* Theme Toggle */}
           <button
