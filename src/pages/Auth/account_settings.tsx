@@ -1,110 +1,242 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { Home, ChevronRight, Settings, Camera, Mail, Lock, AlertTriangle, Moon, Sun } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Camera, Mail, Lock, AlertTriangle, User, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 
 const AccountSettings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
+  const [name, setName] = useState("John Doe"); 
+  const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleUploadAvatar = () => {
-    console.log('Upload avatar');
-    // Avatar upload logic here
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File size must be less than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleUpdateName = () => {
+    setIsUpdatingName(true);
+    setTimeout(() => setIsUpdatingName(false), 1000);
   };
 
   const handleUpdateEmail = () => {
-    console.log('Update email');
-    // Email update logic here
+    // Logic to be implemented
   };
 
   const handleChangePassword = () => {
-    console.log('Change password');
-    // Password change logic here
+    // Logic to be implemented
   };
 
   const handleDeleteAccount = () => {
-    console.log('Delete account');
-    // Delete account logic here
+    if (deleteConfirmation === "DELETE MY ACCOUNT") {
+      setIsDeleting(true);
+      setTimeout(() => {
+        window.location.href = "/register";
+      }, 2000);
+    }
   };
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col">
-          {/* Header */}
-          <header className="px-6 py-4" style={{ backgroundColor: 'var(--navbar-bg)', borderBottom: '1px solid var(--border-color)' }}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <h1 className="text-2xl font-bold">Account Settings</h1>
-              </div>
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl p-8 shadow-2xl animate-in fade-in zoom-in duration-300" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border-color)' }}>
+            <div className="flex items-center space-x-3 text-red-500 mb-6">
+              <AlertTriangle className="w-8 h-8" />
+              <h3 className="text-2xl font-bold">Right to Erasure</h3>
+            </div>
+            
+            <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Pursuant to <strong>GDPR Article 17</strong>, you have the right to be forgotten. Your account will be deactivated immediately, and all your personal data and files will be <strong>permanently purged after a 30-day grace period</strong>.
+            </p>
+            
+            <ul className="text-sm space-y-2 mb-8" style={{ color: 'var(--text-tertiary)' }}>
+              <li className="flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                Deactivation of your profile (immediate)
+              </li>
+              <li className="flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                Permanent deletion of all data after 30 days
+              </li>
+              <li className="flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
+                Right to cancel the request within 30 days
+              </li>
+            </ul>
+
+            <div className="space-y-4">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                Type <span className="text-red-500 font-mono">DELETE MY ACCOUNT</span> to confirm:
+              </label>
+              <input
+                type="text"
+                placeholder="DELETE MY ACCOUNT"
+                value={deleteConfirmation}
+                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border-2 font-mono text-sm focus:ring-4 focus:ring-red-500/20 focus:outline-none transition-all uppercase"
+                style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              />
               
-              <div className="flex items-center space-x-3">
-                {/* Theme Toggle */}
-                <button 
-                  className="bg-transparent border rounded-lg p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-                  style={{ borderColor: 'var(--border-color)', color: 'var(--text-secondary)' }}
-                  onClick={toggleTheme}
-                  aria-label="Toggle theme"
+              <div className="flex space-x-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmation("");
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl border font-semibold transition-colors dark:hover:bg-gray-800 hover:bg-gray-50"
+                  style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                 >
-                  {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+                  Cancel
+                </button>
+                <button
+                  disabled={deleteConfirmation !== "DELETE MY ACCOUNT" || isDeleting}
+                  onClick={handleDeleteAccount}
+                  className="flex-2 px-6 py-3 bg-red-500 text-white rounded-xl font-bold hover:bg-red-600 transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-lg shadow-red-500/20"
+                >
+                  {isDeleting ? "Processing..." : "Request Deletion"}
                 </button>
               </div>
             </div>
-          </header>
-
-          {/* Breadcrumb */}
-          <div className="px-6 py-3 flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-            <Link to="/file-manager" className="cursor-pointer hover:opacity-80 transition-opacity">
-              <Home className="w-4 h-4" />
-            </Link>
-            <ChevronRight className="w-4 h-4" />
-            <Settings className="w-4 h-4" />
-            <span style={{ color: 'var(--text-primary)' }}>Account Settings</span>
           </div>
+        </div>
+      )}
 
-          {/* Content Area */}
+      <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+        <div className="flex-1 flex flex-col">
           <div className="flex-1 p-6">
             <div className="max-w-4xl mx-auto">
-              {/* Page Header */}
               <div className="mb-8">
-                <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Account Settings</h1>
                 <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>Manage your profile and account preferences</p>
               </div>
 
-              {/* Profile Picture Section */}
+              {/* Profile Information */}
               <div className="rounded-lg border p-6 mb-6" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Profile Picture</h2>
-                <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Upload or change your avatar image</p>
-                
-                <div className="flex items-center space-x-6">
-                  {/* Avatar */}
-                  <div className="relative">
-                    <div className="w-24 h-24 rounded-full flex items-center justify-center text-2xl font-semibold" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                      US
+                <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Profile Information</h2>
+                <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Update your name and profile picture</p>
+
+                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                  <div className="relative shrink-0">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      accept="image/*"
+                      className="hidden"
+                    />
+                    <div className="w-24 h-24 rounded-full overflow-hidden flex items-center justify-center text-3xl font-bold bg-blue-500 text-white shadow-lg border-4 border-white dark:border-gray-800">
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Profile" className="w-full h-full object-cover" />
+                      ) : (
+                        name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                      )}
                     </div>
-                    <div className="absolute bottom-0 right-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-600 transition-colors">
-                      <Camera className="w-4 h-4 text-white" />
-                    </div>
-                  </div>
-                  
-                  {/* Upload Info */}
-                  <div className="flex-1">
                     <button
                       onClick={handleUploadAvatar}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors mb-2"
+                      type="button"
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 border-2 border-white dark:border-gray-800 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-md"
                     >
-                      Upload Avatar
+                      <Camera className="w-4 h-4 text-white" />
                     </button>
-                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>JPG, PNG or GIF. Max size 5MB.</p>
+                  </div>
+
+                  <div className="flex-1 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Display Name</label>
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="relative flex-1">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                          <input
+                            type="text"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+                            style={{
+                              backgroundColor: 'var(--bg-tertiary)',
+                              borderColor: 'var(--border-color)',
+                              color: 'var(--text-primary)',
+                            }}
+                          />
+                        </div>
+                        <button
+                          onClick={handleUpdateName}
+                          disabled={isUpdatingName}
+                          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 shrink-0 font-medium"
+                        >
+                          {isUpdatingName ? 'Saving...' : 'Save'}
+                        </button>
+                      </div>
+                    </div>
+                    <p className="text-sm" style={{ color: 'var(--text-tertiary)' }}>This name will be visible to other users on shared files.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Email Address Section */}
+              {/* Theme Preference */}
+              <div className="rounded-lg border p-6 mb-6" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+                <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Theme Preference</h2>
+                <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Choose how SupFile looks to you</p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div
+                    onClick={() => theme === 'dark' && toggleTheme()}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${
+                      theme === 'light' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                    style={{ backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
+                      <Sun className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Light Mode</p>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Clean and bright interface</p>
+                    </div>
+                    {theme === 'light' && <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white dark:border-gray-900"></div>}
+                  </div>
+
+                  <div
+                    onClick={() => theme === 'light' && toggleTheme()}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${
+                      theme === 'dark' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                    }`}
+                    style={{ backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
+                  >
+                    <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+                      <Moon className="w-6 h-6" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Dark Mode</p>
+                      <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>Easier on the eyes in low light</p>
+                    </div>
+                    {theme === 'dark' && <div className="w-5 h-5 bg-blue-500 rounded-full border-4 border-white dark:border-gray-900"></div>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Email Address */}
               <div className="rounded-lg border p-6 mb-6" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
                 <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Email Address</h2>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Update your email address</p>
-                
+
                 <div className="flex items-center space-x-4">
                   <div className="flex-1">
                     <div className="relative">
@@ -114,9 +246,9 @@ const AccountSettings: React.FC = () => {
                         defaultValue="user@example.com"
                         disabled
                         className="w-full pl-10 pr-4 py-2 rounded-lg border"
-                        style={{ 
-                          backgroundColor: 'var(--bg-tertiary)', 
-                          borderColor: 'var(--border-color)', 
+                        style={{
+                          backgroundColor: 'var(--bg-tertiary)',
+                          borderColor: 'var(--border-color)',
                           color: 'var(--text-tertiary)',
                           opacity: 0.7
                         }}
@@ -125,7 +257,7 @@ const AccountSettings: React.FC = () => {
                   </div>
                   <button
                     onClick={handleUpdateEmail}
-                    className="px-4 py-2 rounded-lg border transition-colors"
+                    className="px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
                     style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                   >
                     Update
@@ -133,11 +265,11 @@ const AccountSettings: React.FC = () => {
                 </div>
               </div>
 
-              {/* Password Section */}
+              {/* Password */}
               <div className="rounded-lg border p-6 mb-6" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
                 <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Password</h2>
                 <p className="text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>Change your password</p>
-                
+
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Current Password</label>
@@ -146,12 +278,12 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Enter current password"
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>New Password</label>
                     <div className="relative">
@@ -159,12 +291,12 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Enter new password"
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Confirm New Password</label>
                     <div className="relative">
@@ -172,16 +304,16 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Confirm new password"
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
                     </div>
                   </div>
-                  
+
                   <div className="flex justify-end">
                     <button
                       onClick={handleChangePassword}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
                     >
                       Change Password
                     </button>
@@ -189,23 +321,23 @@ const AccountSettings: React.FC = () => {
                 </div>
               </div>
 
-              {/* Delete Account Section */}
-              <div className="rounded-lg border p-6" style={{ backgroundColor: 'var(--card-bg)', borderColor: '#ef4444' }}>
+              {/* Danger Zone */}
+              <div className="rounded-lg border p-6 transition-all" style={{ backgroundColor: 'var(--card-bg)', borderColor: '#ef4444' }}>
                 <div className="flex items-start space-x-3 mb-4">
-                  <AlertTriangle className="w-5 h-5 mt-1" style={{ color: '#ef4444' }} />
+                  <AlertTriangle className="w-5 h-5 mt-1 text-red-500" />
                   <div>
-                    <h2 className="text-xl font-semibold mb-2" style={{ color: '#ef4444' }}>Delete Account</h2>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Permanently delete your account and all data</p>
+                    <h2 className="text-xl font-semibold mb-2" style={{ color: '#ef4444' }}>Danger Zone</h2>
+                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Manage your Right to Erasure (GDPR)</p>
                   </div>
                 </div>
-                
-                <div className="p-4 rounded-lg" style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+
+                <div className="p-4 rounded-lg border border-red-200 dark:border-red-900/30 bg-red-50/50 dark:bg-red-900/10">
                   <p className="text-sm mb-4" style={{ color: 'var(--text-secondary)' }}>
-                    This action cannot be undone. All your files, folders, and account data will be permanently deleted.
+                    Deleting your account will result in the permanent removal of all your personal data and files after a <strong>30-day grace period</strong>.
                   </p>
                   <button
-                    onClick={handleDeleteAccount}
-                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium border border-red-600 shadow-sm"
                   >
                     Delete Account
                   </button>
