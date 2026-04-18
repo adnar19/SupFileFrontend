@@ -12,9 +12,10 @@ export const Signin = async (email: string, password: string) => {
 
         if (response.data.success) {
             Cookies.set('token', response.data.data.token, { expires: 15 });
-            return response.status;
+            return response;
         } else {
             toast.error(response.data.message)
+            return response;
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -24,7 +25,7 @@ export const Signin = async (email: string, password: string) => {
                 toast.error(
                     error.response.data?.message
                 );
-                return;
+                return error.response;
             }
 
             toast.error("Server Error !");
@@ -42,9 +43,10 @@ export const Signup = async (fullName: string, email: string, password: string) 
 
         if (response.data.success) {
             Cookies.set('token', response.data.accessToken, { expires: 15 });
-            return response.status;
+            return response;
         } else {
             toast.error(response.data.message)
+            return response;
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -54,7 +56,7 @@ export const Signup = async (fullName: string, email: string, password: string) 
                 toast.error(
                     error.response?.data?.message || "Une erreur est survenue"
                 );
-                return;
+                return error.response;
             }
 
             toast.error("Server Error !");
