@@ -21,7 +21,14 @@ const Login: React.FC = () => {
 
     try {
       setLoginLoading(true);
-      await Signin(email, password);
+      const res = await Signin(email, password);
+      
+      if (res) {
+        const message = (res.data?.message || "").toLowerCase();
+        if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
+          navigate("/verify-email");
+        }
+      }
     } catch (err) {
       toast.error('Invalid email or password');
     } finally {

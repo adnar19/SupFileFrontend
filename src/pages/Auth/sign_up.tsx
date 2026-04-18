@@ -28,7 +28,14 @@ const SignUp: React.FC = () => {
 
     try {
       setSignupLoading(true);
-      await Signup(fullName, email, password);
+      const res = await Signup(fullName, email, password);
+      
+      if (res) {
+        const message = (res.data?.message || "").toLowerCase();
+        if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
+          navigate("/verify-email");
+        }
+      }
     } catch (err) {
       toast.error("Registration failed");
     } finally {
