@@ -85,6 +85,7 @@ export const GoogleSignup = async (token: string) => {
                 );
                 return;
             }
+console.log(error);
 
             toast.error("Server Error !");
         }

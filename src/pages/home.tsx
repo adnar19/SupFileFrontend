@@ -138,7 +138,7 @@ const Home: React.FC = () => {
 
             <div className="flex flex-wrap justify-center items-center gap-[clamp(16px,3vw,24px)]">
               <Link
-                to="/register"
+                to="/login"
                 className="bg-[var(--accent-color)] text-white font-semibold
                        text-[clamp(16px,3vw,20px)]
                        px-[clamp(32px,6vw,48px)]

@@ -1,93 +1,152 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { Moon, Sun, User } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext'; 
+import React, { useState, useEffect, useRef } from "react";
+import { Link } from "react-router-dom";
+import {
+  FolderPlus,
+  LogOut,
+  Moon,
+  Search,
+  Sun,
+  Upload,
+  User,
+} from "lucide-react";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const Navbar: React.FC = () => {
-  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  const handleLogout = () => {
+    // Logout logic here
+    window.location.href = "/login";
+  };
   // Ferme le dropdown quand on clique en dehors
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsDropdownOpen(false);
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowAccountMenu(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-
   return (
-    <nav className="bg-[var(--navbar-bg)] shadow-[0_2px_10px_var(--shadow-color)] sticky top-0 z-[100] w-full transition-colors duration-300">
-      <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-3 sm:px-6 sm:py-4 max-w-[1200px] mx-auto w-full gap-3 sm:gap-0">
-        
-        {/* Logo */}
-        <Link 
-          to="/home" 
-          className="flex items-center gap-3 no-underline transition-transform duration-200 hover:scale-[1.02]"
-        >
-          <img 
-            src="/logo.png" 
-            alt="SupFile" 
-            className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-lg object-cover"
-          />
-          <span className="text-lg sm:text-xl md:text-2xl font-bold text-[var(--text-primary)] whitespace-nowrap transition-colors duration-300">
-            SupFile
-          </span>
-        </Link>
-        
-        {/* Contrôles de navigation */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          
-          {/* Bouton de changement de thème */}
-          <button 
-            className="bg-transparent border border-[var(--border-color)] rounded-lg p-1.5 sm:p-2 cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] hover:-translate-y-0.5 active:translate-y-0"
+    <header
+      className="px-6 py-4"
+      style={{
+        backgroundColor: "var(--navbar-bg)",
+        borderBottom: "1px solid var(--border-color)",
+      }}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <h1 className="text-2xl font-bold">Favorite Files</h1>
+        </div>
+
+        <div className="flex items-center space-x-3">
+          {/* Search */}
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
+              style={{ color: "var(--text-tertiary)" }}
+            />
+            <input
+              type="text"
+              placeholder="Search favorite files..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                border: "1px solid var(--border-color)",
+                color: "var(--text-primary)",
+              }}
+            />
+          </div>
+
+          {/* Upload Button */}
+          <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+            <Upload className="w-4 h-4" />
+            <span className="text-sm font-medium">Upload</span>
+          </button>
+
+          {/* New Folder Button */}
+          <button
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors"
+            style={{
+              backgroundColor: "var(--bg-tertiary)",
+              color: "var(--text-primary)",
+            }}
+          >
+            <FolderPlus className="w-4 h-4" />
+            <span className="text-sm font-medium">New Folder</span>
+          </button>
+
+          {/* Theme Toggle */}
+          <button
+            className="bg-transparent border rounded-lg p-1.5 cursor-pointer flex items-center justify-center transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+            style={{
+              borderColor: "var(--border-color)",
+              color: "var(--text-secondary)",
+            }}
             onClick={toggleTheme}
             aria-label="Toggle theme"
           >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
           </button>
 
-          {/* Menu déroulant de profil */}
+          {/* Profile Menu */}
           <div className="relative" ref={dropdownRef}>
-            <button 
-              className="bg-transparent border border-[var(--border-color)] rounded-lg p-1.5 sm:p-2 cursor-pointer flex items-center justify-center transition-all duration-200 text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--text-primary)] hover:-translate-y-0.5 active:translate-y-0"
-              onClick={toggleDropdown}
-              aria-label="Profile menu"
-              aria-expanded={isDropdownOpen}
+            <button
+              onClick={() => setShowAccountMenu(!showAccountMenu)}
+              className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+              style={{
+                backgroundColor: "var(--bg-tertiary)",
+                color: "var(--text-primary)",
+              }}
+              aria-expanded={showAccountMenu}
             >
-              <User size={20} />
+              <User className="w-5 h-5" />
             </button>
-            
-            {isDropdownOpen && (
-              <div className="absolute top-[calc(100%+8px)] right-0 sm:right-0 -right-12 bg-[var(--card-bg)] border border-[var(--border-color)] rounded-lg shadow-[0_4px_20px_var(--shadow-color)] min-w-[120px] sm:min-w-[150px] z-[1000] overflow-hidden animate-[dropdownSlide_0.2s_ease]">
-                <Link 
-                  to="/login" 
-                  className="block px-4 py-3 text-[var(--text-primary)] no-underline text-sm font-medium transition-all duration-200 border-b border-[var(--border-color)] hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)]"
+
+            {showAccountMenu && (
+              <div
+                className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border py-2 z-50"
+                style={{
+                  backgroundColor: "var(--card-bg)",
+                  borderColor: "var(--border-color)",
+                }}
+              >
+                <Link
+                  to="/account-settings"
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
+                  style={{ color: "var(--text-primary)" }}
                 >
-                  Sign In
+                  <User className="w-4 h-4" />
+                  <span>Account</span>
                 </Link>
-                <Link 
-                  to="/register" 
-                  className="block px-4 py-3 text-[var(--text-primary)] no-underline text-sm font-medium transition-all duration-200 hover:bg-[var(--bg-tertiary)] hover:text-[var(--accent-color)]"
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"
+                  style={{ color: "var(--text-primary)" }}
                 >
-                  Sign Up
-                </Link>
+                  <LogOut className="w-4 h-4" />
+                  <span>Log out</span>
+                </button>
               </div>
             )}
           </div>
         </div>
       </div>
-    </nav>
+    </header>
   );
 };
 
