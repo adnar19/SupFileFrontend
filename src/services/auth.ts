@@ -33,6 +33,25 @@ export const Signin = async (email: string, password: string) => {
     }
 };
 
+export const Logout = async () => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.post(`${API_URL}/auth/logout`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 200 || response.data.success) {
+            Cookies.remove('token');
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error("Logout error", error);
+        Cookies.remove('token'); 
+        return false;
+    }
+};
+
 export const Signup = async (fullName: string, email: string, password: string) => {
     try {
         const response = await axios.post(`${API_URL}/auth/register`, {

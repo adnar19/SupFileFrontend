@@ -7,7 +7,6 @@ import { Signup, GoogleSignup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../services/firebase";
-import axios from "axios";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();

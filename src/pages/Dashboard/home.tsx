@@ -141,8 +141,8 @@ const Dashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {files.map((file) => (
-                      <tr className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
+                    {files.map((file,index) => (
+                      <tr key={index} className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
                         <td className="p-4">
                           <div className="flex items-center space-x-3">
                             {file.icon}
