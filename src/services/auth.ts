@@ -52,6 +52,24 @@ export const Logout = async () => {
     }
 };
 
+export const ForgotPassword = async (email: string) => {
+    try {
+        const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status !== undefined &&
+                error.response.status >= 400 &&
+                error.response.status < 500) {
+                toast.error(error.response?.data?.message || "Une erreur est survenue");
+                return error.response;
+            }
+            toast.error("Server Error !");
+        }
+        return null;
+    }
+};
+
 export const Signup = async (fullName: string, email: string, password: string) => {
     try {
         const response = await axios.post(`${API_URL}/auth/register`, {
