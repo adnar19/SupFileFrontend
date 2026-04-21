@@ -1,10 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { Camera, Mail, Lock, AlertTriangle, User, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { ChangePassword } from '../../services/auth';
+import { toast } from 'react-toastify';
 
 const AccountSettings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const [name, setName] = useState("John Doe"); 
+  const [name, setName] = useState("John Doe");
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -12,6 +14,11 @@ const AccountSettings: React.FC = () => {
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
   const handleUploadAvatar = () => {
     fileInputRef.current?.click();
@@ -41,8 +48,31 @@ const AccountSettings: React.FC = () => {
     // Logic to be implemented
   };
 
-  const handleChangePassword = () => {
-    // Logic to be implemented
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      toast.error("Please fill in all password fields");
+      return;
+    }
+
+    if (newPassword !== confirmNewPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const data = await ChangePassword(currentPassword, newPassword, confirmNewPassword);
+      if (data && data.success) {
+        toast.success(data.message || "Password updated successfully");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmNewPassword("");
+      }
+    } catch (err) {
+      toast.error("Failed to change password");
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   const handleDeleteAccount = () => {
@@ -63,11 +93,11 @@ const AccountSettings: React.FC = () => {
               <AlertTriangle className="w-8 h-8" />
               <h3 className="text-2xl font-bold">Right to Erasure</h3>
             </div>
-            
+
             <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
               Pursuant to <strong>GDPR Article 17</strong>, you have the right to be forgotten. Your account will be deactivated immediately, and all your personal data and files will be <strong>permanently purged after a 30-day grace period</strong>.
             </p>
-            
+
             <ul className="text-sm space-y-2 mb-8" style={{ color: 'var(--text-tertiary)' }}>
               <li className="flex items-center">
                 <span className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2"></span>
@@ -95,7 +125,7 @@ const AccountSettings: React.FC = () => {
                 className="w-full px-4 py-3 rounded-xl border-2 font-mono text-sm focus:ring-4 focus:ring-red-500/20 focus:outline-none transition-all uppercase"
                 style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               />
-              
+
               <div className="flex space-x-3 pt-2">
                 <button
                   onClick={() => {
@@ -198,9 +228,8 @@ const AccountSettings: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div
                     onClick={() => theme === 'dark' && toggleTheme()}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${
-                      theme === 'light' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${theme === 'light' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
                     style={{ backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
                   >
                     <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center text-yellow-600">
@@ -215,9 +244,8 @@ const AccountSettings: React.FC = () => {
 
                   <div
                     onClick={() => theme === 'light' && toggleTheme()}
-                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${
-                      theme === 'dark' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
-                    }`}
+                    className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${theme === 'dark' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
                     style={{ backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
                   >
                     <div className="w-12 h-12 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
@@ -278,6 +306,8 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Enter current password"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
@@ -291,6 +321,8 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Enter new password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
@@ -304,6 +336,8 @@ const AccountSettings: React.FC = () => {
                       <input
                         type="password"
                         placeholder="Confirm new password"
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
                         className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none"
                         style={{ backgroundColor: 'var(--bg-tertiary)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
                       />
@@ -313,9 +347,10 @@ const AccountSettings: React.FC = () => {
                   <div className="flex justify-end">
                     <button
                       onClick={handleChangePassword}
-                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium"
+                      disabled={isChangingPassword}
+                      className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:opacity-50"
                     >
-                      Change Password
+                      {isChangingPassword ? 'Updating...' : 'Change Password'}
                     </button>
                   </div>
                 </div>
