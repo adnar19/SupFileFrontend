@@ -1,14 +1,25 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Mail, Lock, AlertTriangle, User, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ChangePassword } from '../../services/auth';
 import { toast } from 'react-toastify';
+import useAuth from '../../hooks/useAuth';
 
 const AccountSettings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const [name, setName] = useState("John Doe");
+  const { user } = useAuth();
+  const [name, setName] = useState("");
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user?.fullName) {
+      setName(user.fullName);
+    }
+    if (user?.avatar) {
+        setAvatarPreview(user.avatar);
+    }
+  }, [user]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
@@ -271,7 +282,7 @@ const AccountSettings: React.FC = () => {
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                       <input
                         type="email"
-                        defaultValue="user@example.com"
+                        value={user?.email || ""}
                         disabled
                         className="w-full pl-10 pr-4 py-2 rounded-lg border"
                         style={{
