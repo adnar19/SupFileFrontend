@@ -17,42 +17,41 @@ const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | undefined>(Cookies.get('token'));
 
-  useEffect(() => {
-    const verifyUser = async () => {
-      if (!token) {
-        setIsAuthenticated(false);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+  const verifyUser = async () => {
+    if (!token) {
+      setIsAuthenticated(false);
+      setUser(null);
+      setLoading(false);
+      return;
+    }
 
-      try {
-        const decoded: any = jwtDecode(token);
-        const userId = decoded.id || decoded.sub;
+    try {
+      const decoded: any = jwtDecode(token);
+      const userId = decoded.id || decoded.sub;
 
-        if (userId) {
-          const res = await GetUser(userId);
-          if (res && res.success) {
-            setUser(res.data);
-            setIsAuthenticated(true);
-          } else {
-            // Si l'utilisateur n'existe pas ou erreur, on invalide la session
-            setIsAuthenticated(false);
-            setUser(null);
-          }
+      if (userId) {
+        const res = await GetUser(userId);
+        if (res && res.success) {
+          setUser(res.data);
+          setIsAuthenticated(true);
         } else {
           setIsAuthenticated(false);
           setUser(null);
         }
-      } catch (error) {
-        console.error("Auth verification error", error);
+      } else {
         setIsAuthenticated(false);
         setUser(null);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error("Auth verification error", error);
+      setIsAuthenticated(false);
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     verifyUser();
   }, [token]);
 
@@ -67,7 +66,7 @@ const useAuth = () => {
     return () => clearInterval(interval);
   }, [token]);
 
-  return { isAuthenticated, loading, user };
+  return { isAuthenticated, loading, user, refreshUser: verifyUser };
 };
 
 export default useAuth;

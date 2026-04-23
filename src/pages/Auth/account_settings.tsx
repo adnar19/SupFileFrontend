@@ -1,23 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Mail, Lock, AlertTriangle, User, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ChangePassword } from '../../services/auth';
+import { ChangePassword, UpdateProfile } from '../../services/auth';
 import { toast } from 'react-toastify';
 import useAuth from '../../hooks/useAuth';
 
 const AccountSettings: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.fullName) {
       setName(user.fullName);
     }
+    if (user?.email) {
+      setEmail(user.email);
+    }
     if (user?.avatar) {
-        setAvatarPreview(user.avatar);
+      setAvatarPreview(user.avatar);
     }
   }, [user]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,13 +55,49 @@ const AccountSettings: React.FC = () => {
     }
   };
 
-  const handleUpdateName = () => {
+  const handleUpdateName = async () => {
+    if (!user?.id) return;
     setIsUpdatingName(true);
-    setTimeout(() => setIsUpdatingName(false), 1000);
+    try {
+      const data = await UpdateProfile(user.id, name, theme.toUpperCase(), email);
+      if (data && data.success) {
+        toast.success("Name updated successfully");
+        refreshUser();
+      }
+    } catch (error) {
+      toast.error("Failed to update name");
+    } finally {
+      setIsUpdatingName(false);
+    }
   };
 
-  const handleUpdateEmail = () => {
-    // Logic to be implemented
+  const handleUpdateEmail = async () => {
+    if (!user?.id) return;
+    setIsUpdatingEmail(true);
+    try {
+      const data = await UpdateProfile(user.id, name, theme.toUpperCase(), email);
+      if (data && data.success) {
+        toast.success("Email updated successfully");
+        refreshUser();
+      }
+    } catch (error) {
+      toast.error("Failed to update email");
+    } finally {
+      setIsUpdatingEmail(false);
+    }
+  };
+
+  const handleUpdateTheme = async (newTheme: string) => {
+    if (newTheme === theme) return;
+    toggleTheme(); // This updates local state/context
+    
+    if (!user?.id) return;
+    try {
+      await UpdateProfile(user.id, name, newTheme.toUpperCase(), email);
+      // We don't necessarily need to toast for theme change as it's immediate visually
+    } catch (error) {
+      console.error("Failed to persist theme preference");
+    }
   };
 
   const handleChangePassword = async () => {
@@ -238,7 +279,7 @@ const AccountSettings: React.FC = () => {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div
-                    onClick={() => theme === 'dark' && toggleTheme()}
+                    onClick={() => handleUpdateTheme('light')}
                     className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${theme === 'light' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     style={{ backgroundColor: theme === 'light' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
@@ -254,7 +295,7 @@ const AccountSettings: React.FC = () => {
                   </div>
 
                   <div
-                    onClick={() => theme === 'light' && toggleTheme()}
+                    onClick={() => handleUpdateTheme('dark')}
                     className={`cursor-pointer p-4 rounded-xl border-2 transition-all flex items-center space-x-4 ${theme === 'dark' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/10' : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     style={{ backgroundColor: theme === 'dark' ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-tertiary)' }}
@@ -282,24 +323,23 @@ const AccountSettings: React.FC = () => {
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4" style={{ color: 'var(--text-tertiary)' }} />
                       <input
                         type="email"
-                        value={user?.email || ""}
-                        disabled
-                        className="w-full pl-10 pr-4 py-2 rounded-lg border"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
                         style={{
                           backgroundColor: 'var(--bg-tertiary)',
                           borderColor: 'var(--border-color)',
-                          color: 'var(--text-tertiary)',
-                          opacity: 0.7
+                          color: 'var(--text-primary)',
                         }}
                       />
                     </div>
                   </div>
                   <button
                     onClick={handleUpdateEmail}
-                    className="px-4 py-2 rounded-lg border transition-colors hover:bg-gray-50 dark:hover:bg-gray-800"
-                    style={{ borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+                    disabled={isUpdatingEmail}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 shrink-0 font-medium"
                   >
-                    Update
+                    {isUpdatingEmail ? 'Saving...' : 'Update'}
                   </button>
                 </div>
               </div>
