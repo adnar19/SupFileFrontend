@@ -162,4 +162,23 @@ export const GetUser = async (id: string) => {
         console.error("Get user error", error);
         return null;
     }
-};
+};
+
+export const UpdateProfile = async (id: string, fullName: string, theme: string, email: string) => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.put(`${API_URL}/users/${id}/profile`, {
+            fullName,
+            theme,
+            email
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            toast.error(error.response?.data?.message || "Update profile failed");
+        }
+        return null;
+    }
+};
