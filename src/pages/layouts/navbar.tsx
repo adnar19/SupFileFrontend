@@ -10,8 +10,10 @@ import {
   User,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
+import useAuth from "../../hooks/useAuth";
 
 const Navbar: React.FC = () => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
@@ -132,26 +134,36 @@ const Navbar: React.FC = () => {
 
           {/* Profile Menu */}
           <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setShowAccountMenu(!showAccountMenu)}
-              className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-              style={{
-                backgroundColor: "var(--bg-tertiary)",
-                color: "var(--text-primary)",
-              }}
-              aria-expanded={showAccountMenu}
-            >
-              <User className="w-5 h-5" />
-            </button>
+             <button
+               onClick={() => setShowAccountMenu(!showAccountMenu)}
+               className="flex items-center justify-center w-10 h-10 rounded-lg transition-colors overflow-hidden border border-[var(--border-color)]"
+               style={{
+                 backgroundColor: "var(--bg-tertiary)",
+                 color: "var(--text-primary)",
+               }}
+               aria-expanded={showAccountMenu}
+             >
+               {user?.avatar ? (
+                 <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+               ) : (
+                 <User className="w-5 h-5" />
+               )}
+             </button>
 
             {showAccountMenu && (
               <div
                 className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border py-2 z-50"
-                style={{
-                  backgroundColor: "var(--card-bg)",
-                  borderColor: "var(--border-color)",
-                }}
-              >
+                 style={{
+                   backgroundColor: "var(--card-bg)",
+                   borderColor: "var(--border-color)",
+                 }}
+               >
+                 {user && (
+                   <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
+                     <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.fullName}</p>
+                     <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{user.email}</p>
+                   </div>
+                 )}
                 <Link
                   to="/account-settings"
                   className="w-full flex items-center space-x-3 px-4 py-2 text-sm transition-colors"

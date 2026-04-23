@@ -149,4 +149,17 @@ export const ChangePassword = async (currentPassword: string, newPassword: strin
         }
         return null;
     }
+};
+
+export const GetUser = async (id: string) => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.get(`${API_URL}/users/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Get user error", error);
+        return null;
+    }
 };
