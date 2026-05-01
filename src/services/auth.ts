@@ -102,8 +102,13 @@ export const Signup = async (fullName: string, email: string, password: string) 
 };
 
 export const GoogleSignup = async (token: string) => {
+    return OAuthSignup(token, 'google');
+};
+
+export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft') => {
     try {
         const response = await axios.post(`${API_URL}/auth/oauth/signup`, {
+            provider,
             idToken: token
         });
         console.log(response.data);
@@ -111,7 +116,7 @@ export const GoogleSignup = async (token: string) => {
         if (response.data.success) {
             Cookies.set('token', response.data.accessToken, { expires: 15 });
         } else {
-            toast.error(response.data.message)
+            toast.error(response.data.message);
         }
         return response.data.statusCode;
     } catch (error) {
@@ -124,8 +129,7 @@ export const GoogleSignup = async (token: string) => {
                 );
                 return;
             }
-console.log(error);
-
+            console.log(error);
             toast.error("Server Error !");
         }
     }
