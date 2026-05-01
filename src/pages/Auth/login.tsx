@@ -5,8 +5,7 @@ import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signin } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
-import { auth, googleProvider } from "../../services/firebase";
-import { signInWithPopup } from "firebase/auth";
+import { handleSignIn } from "../../services/firebase";
 import Cookies from "js-cookie";
 
 const Login: React.FC = () => {
@@ -38,8 +37,7 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoginLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const user = await handleSignIn('google');
       const token = await user.getIdToken();
       Cookies.set("token", token, { expires: 15 });
     } catch (error) {
