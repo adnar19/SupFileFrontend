@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
+import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signin } from "../../services/auth"
@@ -43,6 +44,20 @@ const Login: React.FC = () => {
     } catch (error) {
       console.error(error);
       toast.error("Google authentication failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleMicrosoftLogin = async () => {
+    try {
+      setLoginLoading(true);
+      const user = await handleSignIn('microsoft');
+      const token = await user.getIdToken();
+      Cookies.set("token", token, { expires: 15 });
+    } catch (error) {
+      console.error(error);
+      toast.error("Microsoft authentication failed");
     } finally {
       setLoginLoading(false);
     }
@@ -256,10 +271,31 @@ const Login: React.FC = () => {
                 "
             >
               <GoogleIcon />
-              <span>
+              <span>Google</span>
+            </button>
 
-                Google
-              </span>
+            <button
+              onClick={handleMicrosoftLogin}
+              key="Microsoft"
+              className="
+                  flex items-center justify-center space-x-1
+                  px-[clamp(16px,3vw,20px)]
+                  py-[clamp(12px,3vw,14px)]
+                  min-w-[100px] flex-1
+                  rounded-xl
+                  border-2 border-[var(--shadow-color)]
+                  bg-[var(--bg-primary)]
+                  text-[var(--text-primary)]
+                  text-[clamp(13px,2.5vw,14px)]
+                  font-medium
+                  transition-all duration-300
+                  hover:-translate-y-0.5
+                  hover:border-[var(--accent-color)]
+                  hover:shadow-[0_4px_20px_var(--shadow-color)]
+                "
+            >
+              <MicrosoftIcon />
+              <span>Microsoft</span>
             </button>
 
           </div>
