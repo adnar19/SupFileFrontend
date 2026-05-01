@@ -5,8 +5,7 @@ import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signup, GoogleSignup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../services/firebase";
+import { handleSignIn } from "../../services/firebase";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -46,8 +45,7 @@ const SignUp: React.FC = () => {
     try {
       setSignupLoading(true);
 
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const user = await handleSignIn('google');
 
       const token = await user.getIdToken();
       console.log(token);
