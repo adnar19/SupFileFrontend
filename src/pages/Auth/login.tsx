@@ -193,6 +193,7 @@ const Login: React.FC = () => {
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={loginLoading}
               className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
@@ -206,7 +207,7 @@ const Login: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${loginLoading && "cursor-not-allowed"}
+                ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
               `}
             >
               {loginLoading ? (
@@ -252,8 +253,9 @@ const Login: React.FC = () => {
 
             <button
               onClick={handleGoogleLogin}
+              disabled={loginLoading}
               key="Google"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -268,7 +270,8 @@ const Login: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <GoogleIcon />
               <span>Google</span>
@@ -276,8 +279,9 @@ const Login: React.FC = () => {
 
             <button
               onClick={handleMicrosoftLogin}
+              disabled={loginLoading}
               key="Microsoft"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -292,7 +296,8 @@ const Login: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <MicrosoftIcon />
               <span>Microsoft</span>
