@@ -15,7 +15,11 @@ export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 export const microsoftProvider = new OAuthProvider('microsoft.com');
 
-// Paramètres optionnels pour forcer le choix du compte Microsoft
+// Forcer le choix du compte pour Google et Microsoft
+googleProvider.setCustomParameters({
+  prompt: 'select_account'
+});
+
 microsoftProvider.setCustomParameters({
   prompt: 'select_account'
 });
