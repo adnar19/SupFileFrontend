@@ -275,6 +275,7 @@ const SignUp: React.FC = () => {
             {/* Submit */}
             <button
               type="submit"
+              disabled={signupLoading}
               className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
@@ -288,7 +289,7 @@ const SignUp: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${signupLoading && "cursor-not-allowed"}
+                ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
               `}
             >
               {signupLoading ? (
@@ -332,8 +333,9 @@ const SignUp: React.FC = () => {
           >
             <button
               onClick={handleGoogleSignup}
+              disabled={signupLoading}
               key="Google"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -348,7 +350,8 @@ const SignUp: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <GoogleIcon />
               <span>Google</span>
@@ -356,8 +359,9 @@ const SignUp: React.FC = () => {
 
             <button
               onClick={handleMicrosoftSignup}
+              disabled={signupLoading}
               key="Microsoft"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -372,7 +376,8 @@ const SignUp: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <MicrosoftIcon />
               <span>Microsoft</span>
