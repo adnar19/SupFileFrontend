@@ -54,7 +54,7 @@ const SignUp: React.FC = () => {
       const response = await GoogleSignup(token);
       console.log(response);
 
-      if (response === 200) {
+      if (response && response.data && response.data.success) {
         toast.success("Account created with Google!");
         navigate("/");
       }
@@ -77,7 +77,7 @@ const SignUp: React.FC = () => {
       const response = await OAuthSignup(token, 'microsoft');
       console.log(response);
 
-      if (response === 200) {
+      if (response && response.data && response.data.success) {
         toast.success("Account created with Microsoft!");
         navigate("/");
       }

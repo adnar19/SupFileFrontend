@@ -4,7 +4,7 @@ import { GoogleIcon } from "../../components/GoogleIcon";
 import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
-import { Signin } from "../../services/auth"
+import { Signin, GoogleSignup, OAuthSignup } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
 import { handleSignIn } from "../../services/firebase";
 import Cookies from "js-cookie";
@@ -40,7 +40,13 @@ const Login: React.FC = () => {
       setLoginLoading(true);
       const user = await handleSignIn('google');
       const token = await user.getIdToken();
-      Cookies.set("token", token, { expires: 15 });
+      
+      const response = await GoogleSignup(token);
+      
+      if (response && response.data && response.data.success) {
+        Cookies.set("token", response.data.accessToken, { expires: 15 });
+        // Navigate is handled by useEffect
+      }
     } catch (error) {
       console.error(error);
       toast.error("Google authentication failed");
@@ -54,7 +60,14 @@ const Login: React.FC = () => {
       setLoginLoading(true);
       const user = await handleSignIn('microsoft');
       const token = await user.getIdToken();
-      Cookies.set("token", token, { expires: 15 });
+      
+      const response = await OAuthSignup(token, 'microsoft');
+      
+      if (response && response.data && response.data.success) {
+        Cookies.set("token", response.data.accessToken, { expires: 15 });
+      } else {
+        toast.error(response?.data?.message || "Authentication failed");
+      }
     } catch (error) {
       console.error(error);
       toast.error("Microsoft authentication failed");

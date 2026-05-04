@@ -111,14 +111,12 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
             provider,
             idToken: token
         });
-        console.log(response.data);
-
         if (response.data.success) {
             Cookies.set('token', response.data.accessToken, { expires: 15 });
         } else {
             toast.error(response.data.message);
         }
-        return response.data.statusCode;
+        return response;
     } catch (error) {
         if (axios.isAxiosError(error)) {
             if (error.response?.status !== undefined &&
@@ -127,7 +125,7 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
                 toast.error(
                     error.response?.data?.message || "Une erreur est survenue"
                 );
-                return;
+                return error.response;
             }
             console.log(error);
             toast.error("Server Error !");
