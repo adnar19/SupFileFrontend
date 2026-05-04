@@ -17,17 +17,15 @@ const useAuth = () => {
       }
 
       try {
+        const response = await axios.get(`${API_URL}/auth/check`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.status === 200) {
           setIsAuthenticated(true);
-
-        // const response = await axios.get(`${API_URL}/auth/check-token`, {
-        //   headers: {
-        //     Authorization: `Bearer ${token}`,
-        //   },
-        // });
-
-        // if (response.status === 200) {
-        //   setIsAuthenticated(true);
-        // }
+        }
       } catch (error) {
         setIsAuthenticated(false);
       } finally {
