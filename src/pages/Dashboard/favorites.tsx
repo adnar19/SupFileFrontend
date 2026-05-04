@@ -96,7 +96,7 @@ const Favorites: React.FC = () => {
           <div className="flex items-center justify-between">
             {/* Breadcrumb */}
             <div className="px-6 py-3 flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              <Link to="/file-manager" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
                 <Home className="w-4 h-4" />
               </Link>
               <ChevronRight className="w-4 h-4" />
