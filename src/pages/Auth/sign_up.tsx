@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
+import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
-import { Signup, GoogleSignup } from "../../services/auth";
+import { Signup, GoogleSignup, OAuthSignup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../services/firebase";
-import axios from "axios";
+import { handleSignIn } from "../../services/firebase";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
@@ -28,7 +27,14 @@ const SignUp: React.FC = () => {
 
     try {
       setSignupLoading(true);
-      await Signup(fullName, email, password);
+      const res = await Signup(fullName, email, password);
+      
+      if (res) {
+        const message = (res.data?.message || "").toLowerCase();
+        if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
+          navigate("/verify-email");
+        }
+      }
     } catch (err) {
       toast.error("Registration failed");
     } finally {
@@ -40,8 +46,7 @@ const SignUp: React.FC = () => {
     try {
       setSignupLoading(true);
 
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const user = await handleSignIn('google');
 
       const token = await user.getIdToken();
       console.log(token);
@@ -49,13 +54,36 @@ const SignUp: React.FC = () => {
       const response = await GoogleSignup(token);
       console.log(response);
 
-      if (response === 200) {
+      if (response && response.data && response.data.success) {
         toast.success("Account created with Google!");
         navigate("/");
       }
     } catch (error) {
       console.error(error);
       toast.error("Google registration failed");
+    } finally {
+      setSignupLoading(false);
+    }
+  };
+
+  const handleMicrosoftSignup = async () => {
+    try {
+      setSignupLoading(true);
+
+      const user = await handleSignIn('microsoft');
+      const token = await user.getIdToken();
+      console.log(token);
+
+      const response = await OAuthSignup(token, 'microsoft');
+      console.log(response);
+
+      if (response && response.data && response.data.success) {
+        toast.success("Account created with Microsoft!");
+        navigate("/");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Microsoft registration failed");
     } finally {
       setSignupLoading(false);
     }
@@ -247,6 +275,7 @@ const SignUp: React.FC = () => {
             {/* Submit */}
             <button
               type="submit"
+              disabled={signupLoading}
               className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
@@ -260,7 +289,7 @@ const SignUp: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${signupLoading && "cursor-not-allowed"}
+                ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
               `}
             >
               {signupLoading ? (
@@ -304,8 +333,9 @@ const SignUp: React.FC = () => {
           >
             <button
               onClick={handleGoogleSignup}
+              disabled={signupLoading}
               key="Google"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -320,10 +350,37 @@ const SignUp: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <GoogleIcon />
               <span>Google</span>
+            </button>
+
+            <button
+              onClick={handleMicrosoftSignup}
+              disabled={signupLoading}
+              key="Microsoft"
+              className={`
+                  flex items-center justify-center space-x-1
+                  px-[clamp(16px,3vw,20px)]
+                  py-[clamp(12px,3vw,14px)]
+                  min-w-[100px] flex-1
+                  rounded-xl
+                  border-2 border-[var(--shadow-color)]
+                  bg-[var(--bg-primary)]
+                  text-[var(--text-primary)]
+                  text-[clamp(13px,2.5vw,14px)]
+                  font-medium
+                  transition-all duration-300
+                  hover:-translate-y-0.5
+                  hover:border-[var(--accent-color)]
+                  hover:shadow-[0_4px_20px_var(--shadow-color)]
+                  ${signupLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
+            >
+              <MicrosoftIcon />
+              <span>Microsoft</span>
             </button>
           </div>
 

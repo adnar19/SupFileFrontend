@@ -10,6 +10,8 @@ import Recent from "./pages/Dashboard/recent";
 import Favorites from "./pages/Dashboard/favorites";
 import Trash from "./pages/Dashboard/trash";
 import AccountSettings from "./pages/Auth/account_settings";
+import VerifyEmail from "./pages/Auth/verify-email";
+import ForgotPasswordPage from "./pages/Auth/forgot-password";
 
 const AppRouter: React.FC = () => {
   return (
@@ -17,6 +19,8 @@ const AppRouter: React.FC = () => {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/" element={<PrivateRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />

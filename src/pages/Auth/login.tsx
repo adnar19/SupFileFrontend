@@ -1,27 +1,39 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
-import useAuth from "../../hooks/useAuth";
+import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import { toast } from "react-toastify";
-import { Signin } from "../../services/auth"
+import { Signin, GoogleSignup, OAuthSignup } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
-import { auth, googleProvider } from "../../services/firebase";
-import { signInWithPopup } from "firebase/auth";
+import { handleSignIn } from "../../services/firebase";
+import useAuth from "../../hooks/useAuth";
 import Cookies from "js-cookie";
 
 const Login: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { setToken } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
     try {
       setLoginLoading(true);
-      await Signin(email, password);
+      const res = await Signin(email, password);
+      
+      if (res && res.data && res.data.success) {
+        toast.success('Welcome');
+        // Update auth token state after cookie is set
+        setToken(Cookies.get('token'));
+        navigate('/dashboard');
+      } else {
+        const message = (res?.data?.message || "").toLowerCase();
+        if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
+          navigate("/verify-email");
+        }
+      }
     } catch (err) {
       toast.error('Invalid email or password');
     } finally {
@@ -31,10 +43,18 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoginLoading(true);
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
+      const user = await handleSignIn('google');
       const token = await user.getIdToken();
-      Cookies.set("token", token, { expires: 15 });
+      
+      const response = await GoogleSignup(token);
+      
+      if (response && response.data && response.data.success) {
+        Cookies.set("token", response.data.accessToken, { expires: 15 });
+        // Update auth token state
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
+      }
     } catch (error) {
       console.error(error);
       toast.error("Google authentication failed");
@@ -42,12 +62,30 @@ const Login: React.FC = () => {
       setLoginLoading(false);
     }
   };
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      toast.success('Welcome');
-      navigate('/dashboard');
+
+  const handleMicrosoftLogin = async () => {
+    try {
+      setLoginLoading(true);
+      const user = await handleSignIn('microsoft');
+      const token = await user.getIdToken();
+      
+      const response = await OAuthSignup(token, 'microsoft');
+      
+      if (response && response.data && response.data.success) {
+        Cookies.set("token", response.data.accessToken, { expires: 15 });
+        // Update auth token state
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Microsoft authentication failed");
+    } finally {
+      setLoginLoading(false);
     }
-  }, [isAuthenticated, loading]);
+  };
+  
   return (
     <div
       className="  h-screen
@@ -160,9 +198,20 @@ const Login: React.FC = () => {
               />
             </div>
 
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-[clamp(12px,2.5vw,14px)] font-medium text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors"
+                id="forgot-password-link"
+              >
+                Forgot password?
+              </Link>
+            </div>
+
             {/* Submit Button */}
             <button
               type="submit"
+              disabled={loginLoading}
               className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
@@ -176,7 +225,7 @@ const Login: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${loginLoading && "cursor-not-allowed"}
+                ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
               `}
             >
               {loginLoading ? (
@@ -222,8 +271,9 @@ const Login: React.FC = () => {
 
             <button
               onClick={handleGoogleLogin}
+              disabled={loginLoading}
               key="Google"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -238,13 +288,37 @@ const Login: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <GoogleIcon />
-              <span>
+              <span>Google</span>
+            </button>
 
-                Google
-              </span>
+            <button
+              onClick={handleMicrosoftLogin}
+              disabled={loginLoading}
+              key="Microsoft"
+              className={`
+                  flex items-center justify-center space-x-1
+                  px-[clamp(16px,3vw,20px)]
+                  py-[clamp(12px,3vw,14px)]
+                  min-w-[100px] flex-1
+                  rounded-xl
+                  border-2 border-[var(--shadow-color)]
+                  bg-[var(--bg-primary)]
+                  text-[var(--text-primary)]
+                  text-[clamp(13px,2.5vw,14px)]
+                  font-medium
+                  transition-all duration-300
+                  hover:-translate-y-0.5
+                  hover:border-[var(--accent-color)]
+                  hover:shadow-[0_4px_20px_var(--shadow-color)]
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
+            >
+              <MicrosoftIcon />
+              <span>Microsoft</span>
             </button>
 
           </div>

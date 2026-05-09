@@ -12,9 +12,10 @@ export const Signin = async (email: string, password: string) => {
 
         if (response.data.success) {
             Cookies.set('token', response.data.data.token, { expires: 15 });
-            return response.status;
+            return response;
         } else {
             toast.error(response.data.message)
+            return response;
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -24,11 +25,48 @@ export const Signin = async (email: string, password: string) => {
                 toast.error(
                     error.response.data?.message
                 );
-                return;
+                return error.response;
             }
 
             toast.error("Server Error !");
         }
+    }
+};
+
+export const Logout = async () => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.post(`${API_URL}/auth/logout`, {}, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.status === 200 || response.data.success) {
+            Cookies.remove('token');
+            return true;
+        }
+        return false;
+    } catch (error) {
+        console.error("Logout error", error);
+        Cookies.remove('token'); 
+        return false;
+    }
+};
+
+export const ForgotPassword = async (email: string) => {
+    try {
+        const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status !== undefined &&
+                error.response.status >= 400 &&
+                error.response.status < 500) {
+                toast.error(error.response?.data?.message || "Une erreur est survenue");
+                return error.response;
+            }
+            toast.error("Server Error !");
+        }
+        return null;
     }
 };
 
@@ -42,9 +80,10 @@ export const Signup = async (fullName: string, email: string, password: string) 
 
         if (response.data.success) {
             Cookies.set('token', response.data.accessToken, { expires: 15 });
-            return response.status;
+            return response;
         } else {
             toast.error(response.data.message)
+            return response;
         }
     } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -54,7 +93,7 @@ export const Signup = async (fullName: string, email: string, password: string) 
                 toast.error(
                     error.response?.data?.message || "Une erreur est survenue"
                 );
-                return;
+                return error.response;
             }
 
             toast.error("Server Error !");
@@ -63,18 +102,21 @@ export const Signup = async (fullName: string, email: string, password: string) 
 };
 
 export const GoogleSignup = async (token: string) => {
+    return OAuthSignup(token, 'google');
+};
+
+export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft') => {
     try {
         const response = await axios.post(`${API_URL}/auth/oauth/signup`, {
+            provider,
             idToken: token
         });
-        console.log(response.data);
-
         if (response.data.success) {
             Cookies.set('token', response.data.accessToken, { expires: 15 });
         } else {
-            toast.error(response.data.message)
+            toast.error(response.data.message);
         }
-        return response.data.statusCode;
+        return response;
     } catch (error) {
         if (axios.isAxiosError(error)) {
             if (error.response?.status !== undefined &&
@@ -83,37 +125,11 @@ export const GoogleSignup = async (token: string) => {
                 toast.error(
                     error.response?.data?.message || "Une erreur est survenue"
                 );
-                return;
+                return error.response;
             }
             console.log(error);
             toast.error("Server Error !");
         }
-    }
-};
-
-export const Logout = async () => {
-    try {
-        const token = Cookies.get('token');
-        await axios.post(`${API_URL}/auth/logout`, {}, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        Cookies.remove('token');
-        return true;
-    } catch (error) {
-        Cookies.remove('token');
-        return false;
-    }
-};
-
-export const ForgotPassword = async (email: string) => {
-    try {
-        const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
-        return response.data;
-    } catch (error) {
-        if (axios.isAxiosError(error)) {
-            toast.error(error.response?.data?.message || "An error occurred");
-        }
-        return null;
     }
 };
 

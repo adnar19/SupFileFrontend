@@ -10,6 +10,7 @@ import {
   User,
 } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
+import { Logout } from "../../services/auth";
 import useAuth from "../../hooks/useAuth";
 
 const Navbar: React.FC = () => {
@@ -38,11 +39,11 @@ const Navbar: React.FC = () => {
     }
   };
 
-  const handleLogout = () => {
-    // Logout logic here
+  const handleLogout = async () => {
+    await Logout();
     window.location.href = "/login";
   };
-  // Ferme le dropdown quand on clique en dehors
+  
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (

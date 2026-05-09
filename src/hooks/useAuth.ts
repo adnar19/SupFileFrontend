@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { GetUser } from '../services/auth';
 import Cookies from 'js-cookie';
 import { jwtDecode } from 'jwt-decode';
+import axios from 'axios';
+import { API_URL } from '../services/config';
 
 interface User {
   id: string;
@@ -18,6 +20,7 @@ const useAuth = () => {
   const [token, setToken] = useState<string | undefined>(Cookies.get('token'));
 
   const verifyUser = async () => {
+    setLoading(true);
     if (!token) {
       setIsAuthenticated(false);
       setUser(null);
@@ -26,16 +29,30 @@ const useAuth = () => {
     }
 
     try {
+      // Decode token locally to get userId
       const decoded: any = jwtDecode(token);
       const userId = decoded.id || decoded.sub;
 
-      if (userId) {
-        const res = await GetUser(userId);
-        if (res && res.success) {
-          setUser(res.data);
-          setIsAuthenticated(true);
+      // Verify token with backend
+      const response = await axios.get(`${API_URL}/auth/check`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.data.success) {
+        // Token is valid, now get user info
+        if (userId) {
+          const res = await GetUser(userId);
+          if (res && res.success) {
+            setUser(res.data);
+            setIsAuthenticated(true);
+          } else {
+            setIsAuthenticated(false);
+            setUser(null);
+          }
         } else {
-          setIsAuthenticated(false);
+          setIsAuthenticated(true);
           setUser(null);
         }
       } else {
@@ -66,7 +83,7 @@ const useAuth = () => {
     return () => clearInterval(interval);
   }, [token]);
 
-  return { isAuthenticated, loading, user, refreshUser: verifyUser };
+  return { isAuthenticated, loading, user, refreshUser: verifyUser, setToken };
 };
 
 export default useAuth;
