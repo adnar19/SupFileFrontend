@@ -1,32 +1,29 @@
 import { HardDrive, File, Clock, Star, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const Sidebar: React.FC = () => {
+  const location = useLocation();
   const storageUsed = 45.7;
   const storageTotal = 100;
   const sidebarItems = [
     {
       icon: <Clock className="w-5 h-5" />,
       label: "Recent",
-      active: false,
       path: "/recent",
     },
     {
       icon: <File className="w-5 h-5" />,
       label: "All Files",
-      active: false,
       path: "/dashboard",
     },
     {
       icon: <Star className="w-5 h-5" />,
       label: "Favorites",
-      active: true,
       path: "/favorites",
     },
     {
       icon: <Trash2 className="w-5 h-5" />,
       label: "Trash",
-      active: false,
       path: "/trash",
     },
   ];
@@ -41,7 +38,7 @@ const Sidebar: React.FC = () => {
       <div className="space-y-6">
         {/* Logo */}
         <Link
-          to="/file-manager"
+          to="/dashboard"
           className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
         >
           <img src="/logo.png" alt="SupFile" className="w-8 h-8" />
@@ -50,24 +47,27 @@ const Sidebar: React.FC = () => {
 
         {/* Navigation */}
         <nav className="space-y-1">
-          {sidebarItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
-              style={{
-                backgroundColor: item.active
-                  ? "rgba(59, 130, 246, 0.1)"
-                  : "transparent",
-                color: item.active
-                  ? "var(--accent-color)"
-                  : "var(--text-secondary)",
-              }}
-            >
-              {item.icon}
-              <span className="text-sm font-medium">{item.label}</span>
-            </Link>
-          ))}
+          {sidebarItems.map((item) => {
+            const isActive = location.pathname === item.path || (item.path === "/dashboard" && location.pathname === "/");
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors"
+                style={{
+                  backgroundColor: isActive
+                    ? "rgba(59, 130, 246, 0.1)"
+                    : "transparent",
+                  color: isActive
+                    ? "var(--accent-color)"
+                    : "var(--text-secondary)",
+                }}
+              >
+                {item.icon}
+                <span className="text-sm font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         {/* Storage Indicator */}
