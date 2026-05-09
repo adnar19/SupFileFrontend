@@ -1,20 +1,20 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
 import { MicrosoftIcon } from "../../components/MicrosoftIcon";
-import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signin, GoogleSignup, OAuthSignup } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
 import { handleSignIn } from "../../services/firebase";
+import useAuth from "../../hooks/useAuth";
 import Cookies from "js-cookie";
 
 const Login: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
   const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [loginLoading, setLoginLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { setToken } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,8 +23,13 @@ const Login: React.FC = () => {
       setLoginLoading(true);
       const res = await Signin(email, password);
       
-      if (res) {
-        const message = (res.data?.message || "").toLowerCase();
+      if (res && res.data && res.data.success) {
+        toast.success('Welcome');
+        // Update auth token state after cookie is set
+        setToken(Cookies.get('token'));
+        navigate('/dashboard');
+      } else {
+        const message = (res?.data?.message || "").toLowerCase();
         if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
           navigate("/verify-email");
         }
@@ -45,7 +50,10 @@ const Login: React.FC = () => {
       
       if (response && response.data && response.data.success) {
         Cookies.set("token", response.data.accessToken, { expires: 15 });
-        // Navigate is handled by useEffect
+        // Update auth token state
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error(error);
@@ -65,8 +73,10 @@ const Login: React.FC = () => {
       
       if (response && response.data && response.data.success) {
         Cookies.set("token", response.data.accessToken, { expires: 15 });
-      } else {
-        toast.error(response?.data?.message || "Authentication failed");
+        // Update auth token state
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error(error);
@@ -75,12 +85,7 @@ const Login: React.FC = () => {
       setLoginLoading(false);
     }
   };
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      toast.success('Welcome');
-      navigate('/dashboard');
-    }
-  }, [isAuthenticated, loading]);
+  
   return (
     <div
       className="  h-screen

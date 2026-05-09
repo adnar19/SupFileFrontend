@@ -90,11 +90,11 @@ const Trash: React.FC = () => {
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col py-2 gap-2">
-          
+
           <div className="flex items-center justify-between">
             {/* Breadcrumb */}
             <div className="px-6 py-3 flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              <Link to="/file-manager" className="cursor-pointer hover:opacity-80 transition-opacity">
+              <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
                 <Home className="w-4 h-4" />
               </Link>
               <ChevronRight className="w-4 h-4" />
@@ -122,18 +122,18 @@ const Trash: React.FC = () => {
               </div>
             </div>
           </div>
-<div className='flex justify-end px-6'>
-  <button
-            className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
-            style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-            onClick={handleEmptyTrash}
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Empty Trash</span>
-          </button>
-  </div>
+          <div className='flex justify-end px-6'>
+            <button
+              className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm transition-colors"
+              style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
+              onClick={handleEmptyTrash}
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Empty Trash</span>
+            </button>
+          </div>
 
-          
+
           {/* Content Area */}
           <div className="flex-1 p-6">
 

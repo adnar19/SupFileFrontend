@@ -132,3 +132,69 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
         }
     }
 };
+
+export const ResetPassword = async (token: string, password: string, confirmPassword: string) => {
+    try {
+        const response = await axios.post(`${API_URL}/auth/reset-password/${token}`, {
+            password,
+            confirmPassword
+        });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            toast.error(error.response?.data?.message || "Reset failed");
+        }
+        return null;
+    }
+};
+
+export const ChangePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.post(`${API_URL}/auth/change-password`, {
+            currentPassword,
+            newPassword,
+            confirmPassword
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            toast.error(error.response?.data?.message || "Change password failed");
+        }
+        return null;
+    }
+};
+
+export const GetUser = async (id: string) => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.get(`${API_URL}/users/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Get user error", error);
+        return null;
+    }
+};
+
+export const UpdateProfile = async (id: string, fullName: string, theme: string, email: string) => {
+    try {
+        const token = Cookies.get('token');
+        const response = await axios.put(`${API_URL}/users/${id}/profile`, {
+            fullName,
+            theme,
+            email
+        }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            toast.error(error.response?.data?.message || "Update profile failed");
+        }
+        return null;
+    }
+};
