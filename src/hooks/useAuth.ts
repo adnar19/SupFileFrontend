@@ -44,8 +44,8 @@ const useAuth = () => {
         // Token is valid, now get user info
         if (userId) {
           const res = await GetUser(userId);
-          if (res && res.success) {
-            setUser(res.data);
+          if (res && res.id) {
+            setUser(res);
             setIsAuthenticated(true);
           } else {
             setIsAuthenticated(false);
@@ -83,7 +83,12 @@ const useAuth = () => {
     return () => clearInterval(interval);
   }, [token]);
 
-  return { isAuthenticated, loading, user, refreshUser: verifyUser, setToken };
+  const handleSetToken = (newToken: string | undefined) => {
+    setToken(newToken);
+    setLoading(true);
+  };
+
+  return { isAuthenticated, loading, user, refreshUser: verifyUser, setToken: handleSetToken };
 };
 
 export default useAuth;
