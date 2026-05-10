@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Grid3X3, List, Home, Star, Trash2, File, Folder, Image, ChevronRight, Share2, BarChart3, FileText, Music, Video, Archive } from 'lucide-react';
+import { Grid3X3, List, Home, Star, Trash2, File, Folder, Image, ChevronRight, Share2, BarChart3, FileText, Music, Video, Archive, Presentation, Table } from 'lucide-react';
 import { getFolderContents } from '../../services/folder';
 import { useFileSystem } from '../../contexts/FileSystemContext';
 import { SyncLoader } from 'react-spinners';
@@ -40,6 +40,10 @@ const Dashboard: React.FC = () => {
       case 'wav': return <Music className="w-5 h-5 text-pink-500" />;
       case 'zip':
       case 'rar': return <Archive className="w-5 h-5 text-orange-500" />;
+      case 'ppt':
+      case 'pptx': return <Presentation className="w-5 h-5 text-orange-600" />;
+      case 'xls':
+      case 'xlsx': return <Table className="w-5 h-5 text-emerald-600" />;
       default: return <File className="w-5 h-5 text-slate-500" />;
     }
   };
@@ -79,16 +83,25 @@ const Dashboard: React.FC = () => {
           isFavorite: f.isFavorited
         }));
 
-        const fileItems: FileItem[] = files.map((f: any) => ({
-          id: f.id,
-          name: f.name,
-          type: 'file',
-          fileType: f.mimeType?.split('/')[1]?.toUpperCase() || 'File',
-          modified: new Date(f.createdAt).toLocaleDateString(),
-          size: formatSize(f.size),
-          icon: getIcon('file', f.name),
-          isFavorite: f.isFavorited
-        }));
+        const fileItems: FileItem[] = files.map((f: any) => {
+          const extension = f.name.split('.').pop()?.toLowerCase();
+          let customType = f.mimeType?.split('/')[1]?.toUpperCase() || 'File';
+          
+          if (['ppt', 'pptx'].includes(extension)) customType = 'PowerPoint';
+          if (['xls', 'xlsx'].includes(extension)) customType = 'Excel';
+          if (extension === 'pdf') customType = 'PDF Document';
+
+          return {
+            id: f.id,
+            name: f.name,
+            type: 'file',
+            fileType: customType,
+            modified: new Date(f.createdAt).toLocaleDateString(),
+            size: formatSize(f.size),
+            icon: getIcon('file', f.name),
+            isFavorite: f.isFavorited
+          };
+        });
 
         setItems([...folderItems, ...fileItems]);
         setBreadcrumbs(bc);
