@@ -14,6 +14,7 @@ import { Logout } from "../../services/auth";
 import useAuth from "../../hooks/useAuth";
 import { useFileSystem } from "../../contexts/FileSystemContext";
 import { createFolder } from "../../services/folder";
+import { uploadFile } from "../../services/file";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
 
@@ -29,6 +30,11 @@ const Navbar: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getPageTitle = (path: string) => {
     switch (path) {
@@ -79,6 +85,39 @@ const Navbar: React.FC = () => {
       toast.error("Failed to create folder");
     } finally {
       setIsCreating(false);
+    }
+  };
+
+  const handleUploadClick = () => {
+    setSelectedFile(null);
+    setIsUploadModalOpen(true);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const confirmUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFile || !currentFolderId) {
+      toast.error("Please select a file and ensure you are in a folder");
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const res = await uploadFile(selectedFile, currentFolderId);
+      if (res && res.success) {
+        toast.success("File uploaded successfully");
+        triggerRefresh();
+        setIsUploadModalOpen(false);
+      }
+    } catch (error) {
+      toast.error("Failed to upload file");
+    } finally {
+      setIsUploading(false);
     }
   };
   
@@ -139,7 +178,10 @@ const Navbar: React.FC = () => {
               </div>
 
               {/* Upload Button */}
-              <button className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">
+              <button 
+                onClick={handleUploadClick}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              >
                 <Upload className="w-4 h-4" />
                 <span className="text-sm font-medium">Upload</span>
               </button>
@@ -266,6 +308,55 @@ const Navbar: React.FC = () => {
               className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
               {isCreating ? "Creating..." : "Create Folder"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Upload File Modal */}
+      <Modal 
+        isOpen={isUploadModalOpen} 
+        onClose={() => setIsUploadModalOpen(false)} 
+        title="Upload File"
+      >
+        <form onSubmit={confirmUpload} className="space-y-4">
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center space-y-3 cursor-pointer transition-all hover:bg-[var(--bg-tertiary)]"
+            style={{ borderColor: "var(--border-color)" }}
+          >
+            <Upload className="w-10 h-10 text-blue-500" />
+            <div className="text-center">
+              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+                {selectedFile ? selectedFile.name : "Click to select a file"}
+              </p>
+              <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : "Support all file types"}
+              </p>
+            </div>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileChange} 
+              className="hidden" 
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setIsUploadModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isUploading || !selectedFile}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUploading ? "Uploading..." : "Upload File"}
             </button>
           </div>
         </form>
