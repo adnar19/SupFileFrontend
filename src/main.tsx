@@ -4,12 +4,15 @@ import './index.css'
 import App from './App'
 import { ThemeProvider } from './contexts/ThemeContext'
 import AppRouter from "./Router";
+import { FileSystemProvider } from './contexts/FileSystemContext'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
-      <App />
-      <AppRouter />
+      <FileSystemProvider>
+        <App />
+        <AppRouter />
+      </FileSystemProvider>
     </ThemeProvider>
   </StrictMode>,
 )
