@@ -1,7 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Grid3X3, List, Home, Clock, Star, Trash2, File, ChevronRight, Share2, BarChart3 } from 'lucide-react';
-
+import { 
+  Grid3X3, List, Home, Clock, Star, Trash2, File, Folder, 
+  ChevronRight, Share2, BarChart3, FileText, Music, Video, 
+  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle 
+} from 'lucide-react';
+import { getRecentFiles, deleteFile, downloadFile } from '../../services/file';
+import { SyncLoader } from 'react-spinners';
+import { toast } from 'react-toastify';
+import Modal from '../../components/Modal';
 
 interface FileItem {
   id: string;
@@ -16,216 +23,345 @@ interface FileItem {
 
 const Recent: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const recentFiles: FileItem[] = [
-    {
-      id: '1',
-      name: 'report.pdf',
-      type: 'file',
-      fileType: 'PDF',
-      modified: '5 hours ago',
-      size: '2.4 MB',
-      icon: <File className="w-5 h-5 text-red-500" />,
-      isFavorite: false
-    },
-    {
-      id: '2',
-      name: 'presentation.pptx',
-      type: 'file',
-      fileType: 'PowerPoint',
-      modified: '1 day ago',
-      size: '15.7 MB',
-      icon: <File className="w-5 h-5 text-orange-500" />,
-      isFavorite: true
-    },
-    {
-      id: '3',
-      name: 'budget.xlsx',
-      type: 'file',
-      fileType: 'Excel',
-      modified: '2 days ago',
-      size: '856 KB',
-      icon: <File className="w-5 h-5 text-green-500" />,
-      isFavorite: false
-    },
-    {
-      id: '4',
-      name: 'meeting-notes.docx',
-      type: 'file',
-      fileType: 'Word',
-      modified: '3 days ago',
-      size: '1.2 MB',
-      icon: <File className="w-5 h-5 text-blue-500" />,
-      isFavorite: false
-    },
-    {
-      id: '5',
-      name: 'design.sketch',
-      type: 'file',
-      fileType: 'Sketch',
-      modified: '4 days ago',
-      size: '45.3 MB',
-      icon: <File className="w-5 h-5 text-purple-500" />,
-      isFavorite: true
+  const [items, setItems] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Menus
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  // Modals
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const getIcon = (type: string, name: string) => {
+    if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
+    
+    const extension = name.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf': return <FileText className="w-5 h-5 text-red-500" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif': return <Image className="w-5 h-5 text-green-500" />;
+      case 'mp4':
+      case 'mov': return <Video className="w-5 h-5 text-purple-500" />;
+      case 'mp3':
+      case 'wav': return <Music className="w-5 h-5 text-pink-500" />;
+      case 'zip':
+      case 'rar': return <Archive className="w-5 h-5 text-orange-500" />;
+      case 'ppt':
+      case 'pptx': return <Presentation className="w-5 h-5 text-orange-600" />;
+      case 'xls':
+      case 'xlsx': return <Table className="w-5 h-5 text-emerald-600" />;
+      default: return <File className="w-5 h-5 text-slate-500" />;
     }
-  ];
+  };
 
+  const formatSize = (bytes: string) => {
+    const b = parseInt(bytes);
+    if (isNaN(b) || b === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(b) / Math.log(k));
+    return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const res = await getRecentFiles();
+      if (res.success) {
+        const fileItems: FileItem[] = res.data.files.map((f: any) => {
+          const extension = f.name.split('.').pop()?.toLowerCase();
+          let customType = f.mimeType?.split('/')[1]?.toUpperCase() || 'File';
+          if (['ppt', 'pptx'].includes(extension)) customType = 'PowerPoint';
+          if (['xls', 'xlsx'].includes(extension)) customType = 'Excel';
+
+          return {
+            id: f.id,
+            name: f.name,
+            type: 'file',
+            fileType: customType,
+            modified: new Date(f.updatedAt).toLocaleDateString(),
+            size: formatSize(f.size),
+            icon: getIcon('file', f.name),
+            isFavorite: f.favorites?.length > 0
+          };
+        });
+
+        setItems(fileItems);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch recent files");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  // Close menu on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    if (activeMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuId]);
 
   const toggleFavorite = (id: string) => {
     console.log('Toggle favorite for item:', id);
-    // Toggle favorite logic here
   };
 
   const handleShare = (id: string) => {
     console.log('Share item:', id);
-    // Share logic here
   };
 
-  const handleDelete = (id: string) => {
-    console.log('Delete item:', id);
-    // Delete logic here
+  const handleDownload = async (id: string, name: string) => {
+    try {
+      const blob = await downloadFile(id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', name);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Failed to download file");
+    } finally {
+      setActiveMenuId(null);
+    }
+  };
+
+  const handleDeleteClick = (id: string, name: string) => {
+    setItemToDelete({ id, name });
+    setIsDeleteModalOpen(true);
+    setActiveMenuId(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setIsDeleting(true);
+      await deleteFile(itemToDelete.id);
+      toast.success("Item moved to trash");
+      fetchData();
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to delete item");
+    } finally {
+      setIsDeleting(false);
+      setItemToDelete(null);
+    }
   };
 
   return (
-    <div className="min-h-full" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <div className="min-h-full flex" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-        {/* Sidebar */}
+    <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-4">
+        <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
+          <Link to="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
+            <Home className="w-4 h-4" />
+          </Link>
+          <ChevronRight className="w-4 h-4" />
+          <Clock className="w-4 h-4" />
+          <span className="font-semibold text-[var(--text-primary)]">Recent Files</span>
+        </div>
 
-
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col py-2">
-          <div className="flex justify-between items-center">
-            {/* Breadcrumb */}
-            <div className="px-6 py-3 flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
-                <Home className="w-4 h-4" />
-              </Link>
-              <ChevronRight className="w-4 h-4" />
-              <Clock className="w-4 h-4" />
-              <span style={{ color: 'var(--text-primary)' }}>Recent Files</span>
-            </div>
-
-
-            {/* View Toggle */}
-
-            <div className="flex items-center space-x-1 rounded-lg p-1 mx-6" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded ${viewMode === 'list' ? 'shadow-sm' : ''}`}
-                style={{ backgroundColor: viewMode === 'list' ? 'var(--card-bg)' : 'transparent' }}
-              >
-                <List className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded ${viewMode === 'grid' ? 'shadow-sm' : ''}`}
-                style={{ backgroundColor: viewMode === 'grid' ? 'var(--card-bg)' : 'transparent' }}
-              >
-                <Grid3X3 className="w-4 h-4" />
-              </button>
-            </div>
-
-          </div>
-
-
-          {/* Content Area */}
-          <div className="flex-1 p-6">
-
-
-            {/* Files/Folders */}
-            {viewMode === 'list' ? (
-              <div className="rounded-lg border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: 'var(--border-color)' }}>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Type</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Size</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Modified</th>
-                      <th className="text-center p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentFiles.map((file) => (
-                      <tr className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-3">
-                            {file.icon}
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.fileType}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.size}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.modified}</td>
-                        <td className="p-4">
-                          <div className="flex items-center justify-center space-x-2 pl-2">
-                            {/* Share */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleShare(file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <Share2 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            {/* Plot */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => console.log('Plot item:', file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <BarChart3 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            {/* Favorite */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => toggleFavorite(file.id)}
-                                className={`p-1.5 rounded transition-colors flex items-center justify-center ${file.isFavorite ? 'text-yellow-500' : ''
-                                  }`}
-                                style={{ color: file.isFavorite ? '#eab308' : 'var(--text-tertiary)' }}
-                              >
-                                <Star className="w-4 h-4" fill={file.isFavorite ? 'currentColor' : 'none'} />
-                              </button>
-                            </div>
-
-                            {/* Delete */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleDelete(file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {recentFiles.map((file) => (
-                  <div key={file.id} className="rounded-lg border p-4 transition-colors cursor-pointer" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                    <div className="flex flex-col items-center space-y-2">
-                      {file.icon}
-                      <span className="text-sm font-medium text-center" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{file.size}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
+          <button 
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
+          >
+            <List className="w-4 h-4" />
+          </button>
+          <button 
+            onClick={() => setViewMode('grid')}
+            className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
+          >
+            <Grid3X3 className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {/* Content Area */}
+      <div className="flex-1 p-6">
+        {loading ? (
+          <div className="h-64 flex justify-center items-center">
+            <SyncLoader color="#1076fc" size={15} />
+          </div>
+        ) : items.length === 0 ? (
+          <div className="h-64 flex flex-col justify-center items-center space-y-4 opacity-50">
+            <Clock className="w-16 h-16" />
+            <p className="text-lg font-medium">No recent files</p>
+          </div>
+        ) : viewMode === 'list' ? (
+          <div className="rounded-xl border overflow-hidden shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-tertiary)' }}>
+                  <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                  <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Type</th>
+                  <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Size</th>
+                  <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Modified</th>
+                  <th className="p-4 text-sm font-semibold text-center" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr 
+                    key={item.id} 
+                    className="border-b hover:bg-[var(--bg-tertiary)] transition-colors group" 
+                    style={{ borderColor: 'var(--border-color)' }}
+                  >
+                    <td className="p-4">
+                      <div className="flex items-center space-x-3">
+                        {item.icon}
+                        <span className="text-sm font-medium">{item.name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.fileType}</td>
+                    <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.size}</td>
+                    <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.modified}</td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-center space-x-1">
+                        <button onClick={() => handleDownload(item.id, item.name)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-blue-500 transition-all">
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleShare(item.id)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-blue-500 transition-all">
+                          <Share2 className="w-4 h-4" />
+                        </button>
+                        <button className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-green-500 transition-all">
+                          <BarChart3 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => toggleFavorite(item.id)} 
+                          className={`p-2 rounded-lg hover:bg-[var(--bg-secondary)] transition-all ${item.isFavorite ? 'text-yellow-500' : 'text-[var(--text-tertiary)] hover:text-yellow-500'}`}
+                        >
+                          <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
+                        </button>
+                        <button onClick={() => handleDeleteClick(item.id, item.name)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-red-500 transition-all">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+            {items.map((item) => (
+              <div 
+                key={item.id} 
+                className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500/30 transition-all cursor-pointer group relative"
+                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+              >
+                {/* Action Menu Button */}
+                <div className="absolute top-2 right-2 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                    }}
+                    className="p-1 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                  >
+                    <MoreVertical className="w-4 h-4" />
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {activeMenuId === item.id && (
+                    <div 
+                      className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
+                      style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => handleDownload(item.id, item.name)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        <span>Download</span>
+                      </button>
+                      <button
+                        onClick={() => handleShare(item.id)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        <span>Share</span>
+                      </button>
+                      <button
+                        onClick={() => toggleFavorite(item.id)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-yellow-500/10 text-[var(--text-primary)] hover:text-yellow-500 transition-colors"
+                      >
+                        <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
+                        <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
+                      </button>
+                      <div className="h-px bg-[var(--border-color)]" />
+                      <button
+                        onClick={() => handleDeleteClick(item.id, item.name)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mb-3 transform group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 flex items-center justify-center">
+                    {item.icon}
+                  </div>
+                </div>
+                <span className="text-sm font-medium text-center truncate w-full mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
+                <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{item.modified}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={isDeleteModalOpen} 
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)} 
+        title="Move to Trash"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <AlertTriangle className="w-6 h-6 text-orange-500 flex-shrink-0" />
+            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Are you sure you want to move <span className="font-bold text-orange-500">"{itemToDelete?.name}"</span> to trash?
+            </p>
+          </div>
+          
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? "Moving..." : "Move to Trash"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -35,3 +35,33 @@ export const getFolderContents = async (folderId: string = "root") => {
     throw error;
   }
 };
+
+export const deleteFolder = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/folders/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting folder:", error);
+    throw error;
+  }
+};
+
+export const restoreFolder = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/restore`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error restoring folder:", error);
+    throw error;
+  }
+};

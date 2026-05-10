@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Grid3X3, List, Home, Star, Trash2, File, Folder, Image, ChevronRight, Share2, BarChart3, FileText, Music, Video, Archive, Presentation, Table } from 'lucide-react';
-import { getFolderContents } from '../../services/folder';
+import { 
+  Grid3X3, List, Home, Star, Trash2, File, Folder, Image, 
+  ChevronRight, Share2, BarChart3, FileText, Music, Video, 
+  Archive, Presentation, Table, Download, MoreVertical 
+} from 'lucide-react';
+import { getFolderContents, deleteFolder } from '../../services/folder';
+import { deleteFile, downloadFile } from '../../services/file';
 import { useFileSystem } from '../../contexts/FileSystemContext';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
+import Modal from '../../components/Modal';
+import { AlertTriangle } from 'lucide-react';
 
 interface FileItem {
   id: string;
@@ -22,7 +29,18 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [breadcrumbs, setBreadcrumbs] = useState<{ id: string; name: string }[]>([]);
   
-  const { currentFolderId, setCurrentFolderId, currentFolderName, setCurrentFolderName, refreshTrigger } = useFileSystem();
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Menus
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  
+  const { 
+    currentFolderId, setCurrentFolderId, 
+     setCurrentFolderName, 
+    refreshTrigger, triggerRefresh 
+  } = useFileSystem();
 
   const getIcon = (type: string, name: string) => {
     if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
@@ -60,16 +78,17 @@ const Dashboard: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      setItems([]);
       const res = await getFolderContents(currentFolderId || "root");
       if (res.success) {
         const { folders, files, breadcrumbs: bc, currentFolder } = res.data;
         
-        // Update current folder info
         if (currentFolder) {
-            setCurrentFolderName(currentFolder.name);
-            if (!currentFolderId) {
-                setCurrentFolderId(currentFolder.id);
-            }
+          setCurrentFolderName(currentFolder.name);
+          // Auto-sync currentFolderId if we just loaded root
+          if (!currentFolderId && currentFolder.parentId === null) {
+            // Root already identified
+          }
         }
 
         const folderItems: FileItem[] = folders.map((f: any) => ({
@@ -80,7 +99,7 @@ const Dashboard: React.FC = () => {
           modified: new Date(f.updatedAt).toLocaleDateString(),
           size: '--',
           icon: getIcon('folder', f.name),
-          isFavorite: f.isFavorited
+          isFavorite: f.favorites?.length > 0
         }));
 
         const fileItems: FileItem[] = files.map((f: any) => {
@@ -99,7 +118,7 @@ const Dashboard: React.FC = () => {
             modified: new Date(f.createdAt).toLocaleDateString(),
             size: formatSize(f.size),
             icon: getIcon('file', f.name),
-            isFavorite: f.isFavorited
+            isFavorite: f.favorites?.length > 0
           };
         });
 
@@ -116,6 +135,15 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [currentFolderId, refreshTrigger]);
+
+  // Close menu on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveMenuId(null);
+    if (activeMenuId) {
+      document.addEventListener('click', handleClickOutside);
+    }
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuId]);
 
   const handleHomeClick = () => {
     setCurrentFolderId(undefined);
@@ -134,8 +162,45 @@ const Dashboard: React.FC = () => {
     console.log('Share item:', id);
   };
 
-  const handleDelete = (id: string) => {
-    console.log('Delete item:', id);
+  const handleDownload = async (id: string, name: string) => {
+    try {
+      const blob = await downloadFile(id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', name);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Failed to download file");
+    }
+  };
+
+  const handleDelete = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToDelete({ id, name, type });
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setIsDeleting(true);
+      if (itemToDelete.type === 'folder') {
+        await deleteFolder(itemToDelete.id);
+      } else {
+        await deleteFile(itemToDelete.id);
+      }
+      toast.success("Item moved to trash");
+      triggerRefresh();
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to delete item");
+    } finally {
+      setIsDeleting(false);
+      setItemToDelete(null);
+    }
   };
 
   return (
@@ -161,16 +226,16 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
 
-          <div className="flex items-center space-x-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-            <button
+          <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
+            <button 
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm' : 'hover:bg-[var(--bg-secondary)]'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             >
               <List className="w-4 h-4" />
             </button>
-            <button
+            <button 
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm' : 'hover:bg-[var(--bg-secondary)]'}`}
+              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             >
               <Grid3X3 className="w-4 h-4" />
             </button>
@@ -190,14 +255,14 @@ const Dashboard: React.FC = () => {
             </div>
           ) : viewMode === 'list' ? (
             <div className="rounded-xl border overflow-hidden shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-              <table className="w-full">
+              <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-tertiary)' }}>
-                    <th className="text-left p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                    <th className="text-left p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Type</th>
-                    <th className="text-left p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Size</th>
-                    <th className="text-left p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Modified</th>
-                    <th className="text-center p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+                    <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                    <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Type</th>
+                    <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Size</th>
+                    <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Modified</th>
+                    <th className="p-4 text-sm font-semibold text-center" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -222,9 +287,14 @@ const Dashboard: React.FC = () => {
                       <td className="p-4">
                         <div className="flex items-center justify-center space-x-1">
                           {item.type === 'file' && (
-                            <button onClick={() => handleShare(item.id)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-blue-500 transition-all">
-                              <Share2 className="w-4 h-4" />
-                            </button>
+                            <>
+                              <button onClick={() => handleDownload(item.id, item.name)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-blue-500 transition-all">
+                                <Download className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => handleShare(item.id)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-blue-500 transition-all">
+                                <Share2 className="w-4 h-4" />
+                              </button>
+                            </>
                           )}
                           <button className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-green-500 transition-all">
                             <BarChart3 className="w-4 h-4" />
@@ -235,7 +305,10 @@ const Dashboard: React.FC = () => {
                           >
                             <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
                           </button>
-                          <button onClick={() => handleDelete(item.id)} className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-red-500 transition-all">
+                          <button 
+                            onClick={() => handleDelete(item.id, item.name, item.type)} 
+                            className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-red-500 transition-all"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -250,12 +323,70 @@ const Dashboard: React.FC = () => {
               {items.map((item) => (
                 <div 
                   key={item.id} 
-                  onClick={() => item.type === 'folder' && handleFolderClick(item.id)}
-                  className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500 hover:shadow-md transition-all cursor-pointer group"
+                  className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500/30 transition-all cursor-pointer group relative"
                   style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+                  onClick={() => item.type === 'folder' && handleFolderClick(item.id)}
                 >
-                  <div className="mb-3 transform group-hover:scale-110 transition-transform">
-                    {React.cloneElement(item.icon as React.ReactElement, { className: 'w-12 h-12' })}
+                  {/* Action Menu Button */}
+                  <div className="absolute top-2 right-2 z-10">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                      }}
+                      className="p-1 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
+                    >
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+
+                    {/* Dropdown Menu */}
+                    {activeMenuId === item.id && (
+                      <div 
+                        className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
+                        style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {item.type === 'file' && (
+                          <>
+                            <button
+                              onClick={() => handleDownload(item.id, item.name)}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                            >
+                              <Download className="w-4 h-4" />
+                              <span>Download</span>
+                            </button>
+                            <button
+                              onClick={() => handleShare(item.id)}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                            >
+                              <Share2 className="w-4 h-4" />
+                              <span>Share</span>
+                            </button>
+                          </>
+                        )}
+                        <button
+                          onClick={() => toggleFavorite(item.id)}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-yellow-500/10 text-[var(--text-primary)] hover:text-yellow-500 transition-colors"
+                        >
+                          <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
+                          <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
+                        </button>
+                        <div className="h-px bg-[var(--border-color)]" />
+                        <button
+                          onClick={() => handleDelete(item.id, item.name, item.type)}
+                          className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mb-3 transform group-hover:scale-105 transition-transform">
+                    <div className="w-12 h-12 flex items-center justify-center">
+                      {item.icon}
+                    </div>
                   </div>
                   <span className="text-sm font-medium text-center truncate w-full mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
                   <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{item.type === 'folder' ? item.fileType : item.size}</span>
@@ -265,6 +396,45 @@ const Dashboard: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal 
+        isOpen={isDeleteModalOpen} 
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)} 
+        title="Move to Trash"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
+            <AlertTriangle className="w-6 h-6 text-orange-500 flex-shrink-0" />
+            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+              Are you sure you want to move <span className="font-bold text-orange-500">"{itemToDelete?.name}"</span> to trash?
+            </p>
+          </div>
+          
+          <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+            You can restore this item from the Trash section later.
+          </p>
+
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setIsDeleteModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmDelete}
+              disabled={isDeleting}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50 flex items-center"
+            >
+              {isDeleting ? "Moving..." : "Move to Trash"}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -21,3 +21,109 @@ export const uploadFile = async (file: File, folderId: string) => {
     throw error;
   }
 };
+
+export const deleteFile = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/files/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting file:", error);
+    throw error;
+  }
+};
+
+export const downloadFile = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/files/download/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: 'blob'
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error downloading file:", error);
+    throw error;
+  }
+};
+
+export const getTrash = async () => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/files/trash`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching trash:", error);
+    throw error;
+  }
+};
+
+export const restoreFile = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/files/${id}/restore`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error restoring file:", error);
+    throw error;
+  }
+};
+
+export const deleteFilePermanently = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/files/${id}/permanent`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting file permanently:", error);
+    throw error;
+  }
+};
+
+export const getRecentFiles = async () => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/files/recent`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching recent files:", error);
+    throw error;
+  }
+};
+
+export const getFavoriteFiles = async () => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/files/favorites`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching favorite files:", error);
+    throw error;
+  }
+};
