@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Grid3X3, List, Home, Trash2, File, Folder, ChevronRight, 
-  RotateCcw, Image, FileText, Music, Video, Archive, 
-  Presentation, Table, AlertTriangle, MoreVertical 
+  RotateCcw, Image as ImageIcon, FileText, Music, Video, Archive, 
+  Presentation, Table, AlertTriangle, MoreVertical, ChevronLeft 
 } from 'lucide-react';
 import { getTrash, restoreFile, deleteFilePermanently } from '../../services/file';
 import { restoreFolder } from '../../services/folder';
@@ -25,6 +25,12 @@ const Trash: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [items, setItems] = useState<TrashItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    limit: 10
+  });
   
   // Menus
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -43,7 +49,7 @@ const Trash: React.FC = () => {
       case 'jpg':
       case 'jpeg':
       case 'png':
-      case 'gif': return <Image className="w-5 h-5 text-slate-400" />;
+      case 'gif': return <ImageIcon className="w-5 h-5 text-slate-400" />;
       case 'mp4':
       case 'mov': return <Video className="w-5 h-5 text-slate-400" />;
       case 'mp3':
@@ -67,10 +73,10 @@ const Trash: React.FC = () => {
     return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const fetchTrash = async () => {
+  const fetchTrash = async (page: number = 1) => {
     try {
       setLoading(true);
-      const res = await getTrash();
+      const res = await getTrash(page, pagination.limit);
       if (res.success) {
         const { folders, files } = res.data;
         
@@ -102,6 +108,7 @@ const Trash: React.FC = () => {
         });
 
         setItems([...folderItems, ...fileItems]);
+        if (res.pagination) setPagination(res.pagination);
       }
     } catch (error) {
       toast.error("Failed to fetch trash");
@@ -111,8 +118,8 @@ const Trash: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchTrash();
-  }, []);
+    fetchTrash(pagination.currentPage);
+  }, [pagination.currentPage]);
 
   // Close menu on click outside
   useEffect(() => {
@@ -168,7 +175,7 @@ const Trash: React.FC = () => {
   return (
     <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[var(--bg-primary)]">
         <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <Link to="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
             <Home className="w-4 h-4" />
@@ -320,6 +327,50 @@ const Trash: React.FC = () => {
                 <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{item.deletedAt}</span>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && items.length > 0 && (
+          <div className="mt-8 flex items-center justify-between px-2">
+            <p className="text-sm text-[var(--text-tertiary)]">
+              Showing <span className="font-medium text-[var(--text-primary)]">{((pagination.currentPage - 1) * pagination.limit) + 1}</span> to <span className="font-medium text-[var(--text-primary)]">{Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)}</span> of <span className="font-medium text-[var(--text-primary)]">{pagination.totalItems}</span> items
+            </p>
+            
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+                disabled={pagination.currentPage === 1}
+                className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              
+              {/* Page Numbers */}
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setPagination(prev => ({ ...prev, currentPage: page }))}
+                    className={`w-10 h-10 rounded-lg border text-sm font-medium transition-all ${
+                      pagination.currentPage === page 
+                      ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
+                      : 'border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+                disabled={pagination.currentPage === pagination.totalPages || pagination.totalPages === 0}
+                className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { 
   Grid3X3, List, Home, Clock, Star, Trash2, File, Folder, 
   ChevronRight, Share2, BarChart3, FileText, Music, Video, 
-  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle 
+  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle, Image as ImageIcon 
 } from 'lucide-react';
-import { getRecentFiles, deleteFile, downloadFile } from '../../services/file';
+import { getUserFiles, deleteFile, downloadFile } from '../../services/file';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
@@ -22,7 +22,7 @@ interface FileItem {
 }
 
 const Recent: React.FC = () => {
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   
@@ -43,7 +43,7 @@ const Recent: React.FC = () => {
       case 'jpg':
       case 'jpeg':
       case 'png':
-      case 'gif': return <Image className="w-5 h-5 text-green-500" />;
+      case 'gif': return <ImageIcon className="w-5 h-5 text-green-500" />;
       case 'mp4':
       case 'mov': return <Video className="w-5 h-5 text-purple-500" />;
       case 'mp3':
@@ -70,9 +70,10 @@ const Recent: React.FC = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const res = await getRecentFiles();
+      // On utilise la même route que "All Files" mais limitée aux 5 derniers
+      const res = await getUserFiles(1, 5);
       if (res.success) {
-        const fileItems: FileItem[] = res.data.files.map((f: any) => {
+        const fileItems: FileItem[] = res.data.map((f: any) => {
           const extension = f.name.split('.').pop()?.toLowerCase();
           let customType = f.mimeType?.split('/')[1]?.toUpperCase() || 'File';
           if (['ppt', 'pptx'].includes(extension)) customType = 'PowerPoint';
@@ -86,7 +87,7 @@ const Recent: React.FC = () => {
             modified: new Date(f.updatedAt).toLocaleDateString(),
             size: formatSize(f.size),
             icon: getIcon('file', f.name),
-            isFavorite: f.favorites?.length > 0
+            isFavorite: f.isFavorited || false
           };
         });
 
@@ -163,7 +164,7 @@ const Recent: React.FC = () => {
   return (
     <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4">
+      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[var(--bg-primary)]">
         <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
           <Link to="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
             <Home className="w-4 h-4" />

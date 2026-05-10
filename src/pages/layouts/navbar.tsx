@@ -40,6 +40,8 @@ const Navbar: React.FC = () => {
     switch (path) {
       case "/":
       case "/dashboard":
+        return "My Drive";
+      case "/all-files":
         return "All Files";
       case "/recent":
         return "Recent";

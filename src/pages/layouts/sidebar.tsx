@@ -7,14 +7,19 @@ const Sidebar: React.FC = () => {
   const storageTotal = 100;
   const sidebarItems = [
     {
-      icon: <Clock className="w-5 h-5" />,
-      label: "Recent",
-      path: "/recent",
+      icon: <HardDrive className="w-5 h-5" />,
+      label: "My Drive",
+      path: "/dashboard",
     },
     {
       icon: <File className="w-5 h-5" />,
       label: "All Files",
-      path: "/dashboard",
+      path: "/all-files",
+    },
+    {
+      icon: <Clock className="w-5 h-5" />,
+      label: "Recent",
+      path: "/recent",
     },
     {
       icon: <Star className="w-5 h-5" />,
@@ -29,7 +34,7 @@ const Sidebar: React.FC = () => {
   ];
   return (
     <div
-      className="w-64 p-6"
+      className="w-64 p-6 flex-shrink-0 h-full overflow-y-auto"
       style={{
         backgroundColor: "var(--bg-secondary)",
         borderRight: "1px solid var(--border-color)",

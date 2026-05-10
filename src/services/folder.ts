@@ -21,10 +21,10 @@ export const createFolder = async (name: string, parentId?: string) => {
   }
 };
 
-export const getFolderContents = async (folderId: string = "root") => {
+export const getFolderContents = async (folderId: string = "root", page: number = 1, limit: number = 10) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/folders/${folderId}`, {
+    const response = await axios.get(`${API_URL}/folders/${folderId}?page=${page}&limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

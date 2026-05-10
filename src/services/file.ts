@@ -53,10 +53,10 @@ export const downloadFile = async (id: string) => {
   }
 };
 
-export const getTrash = async () => {
+export const getTrash = async (page: number = 1, limit: number = 10) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/files/trash`, {
+    const response = await axios.get(`${API_URL}/files/trash?page=${page}&limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -98,6 +98,21 @@ export const deleteFilePermanently = async (id: string) => {
   }
 };
 
+export const getUserFiles = async (page: number = 1, limit: number = 20) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/files?page=${page}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user files:", error);
+    throw error;
+  }
+};
+
 export const getRecentFiles = async () => {
   try {
     const token = Cookies.get("token");
@@ -113,10 +128,10 @@ export const getRecentFiles = async () => {
   }
 };
 
-export const getFavoriteFiles = async () => {
+export const getFavoriteFiles = async (page: number = 1, limit: number = 10) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/files/favorites`, {
+    const response = await axios.get(`${API_URL}/favorites?page=${page}&limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

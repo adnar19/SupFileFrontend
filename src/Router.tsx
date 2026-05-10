@@ -5,6 +5,7 @@ import NotFoundPage from "./pages/not-found";
 import LoginPage from "./pages/Auth/login";
 import RegisterPage from "./pages/Auth/sign_up";
 import Dashboard from "./pages/Dashboard/home";
+import AllFiles from "./pages/Dashboard/allFiles";
 import PrivateRoute from "./components/PrivateRoute";
 import Recent from "./pages/Dashboard/recent";
 import Favorites from "./pages/Dashboard/favorites";
@@ -24,6 +25,7 @@ const AppRouter: React.FC = () => {
         <Route path="/" element={<PrivateRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/all-files" element={<AllFiles />} />
           <Route path="/recent" element={<Recent />} /> 
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/trash" element={<Trash />} />
