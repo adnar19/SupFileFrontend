@@ -65,3 +65,18 @@ export const restoreFolder = async (id: string) => {
     throw error;
   }
 };
+
+export const renameFolderApi = async (id: string, name: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/rename`, { name }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error renaming folder:", error);
+    throw error;
+  }
+};

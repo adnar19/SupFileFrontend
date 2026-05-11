@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { 
   Grid3X3, List, Home, Star, Trash2, File, Folder, 
   ChevronRight, Share2, BarChart3, FileText, Music, Video, 
-  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle, Image as ImageIcon, ChevronLeft 
+  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle, Image as ImageIcon, ChevronLeft, Edit2 
 } from 'lucide-react';
-import { getFavoriteFiles, deleteFile, downloadFile, toggleFavoriteApi } from '../../services/file';
-import { deleteFolder } from '../../services/folder';
+import { getFavoriteFiles, deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
+import { deleteFolder, renameFolderApi } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
@@ -40,6 +40,11 @@ const Favorites: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [itemToRename, setItemToRename] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
 
   const getIcon = (type: string, name: string) => {
     if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
@@ -140,6 +145,32 @@ const Favorites: React.FC = () => {
       toast.success("Item removed from favorites");
     } catch (error) {
       toast.error("Failed to remove from favorites");
+    }
+  };
+
+  const handleRenameClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToRename({ id, name, type });
+    setNewName(name);
+    setIsRenameModalOpen(true);
+    setActiveMenuId(null);
+  };
+
+  const confirmRename = async () => {
+    if (!itemToRename || !newName.trim()) return;
+    try {
+      setIsRenaming(true);
+      if (itemToRename.type === 'file') {
+        await renameFileApi(itemToRename.id, newName.trim());
+      } else {
+        await renameFolderApi(itemToRename.id, newName.trim());
+      }
+      setItems(items.map(item => item.id === itemToRename.id ? { ...item, name: newName.trim() } : item));
+      toast.success("Renamed successfully");
+      setIsRenameModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to rename");
+    } finally {
+      setIsRenaming(false);
     }
   };
 
@@ -303,6 +334,13 @@ const Favorites: React.FC = () => {
                               <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
                               <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
                             </button>
+                            <button
+                              onClick={() => handleRenameClick(item.id, item.name, item.type)}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                              <span>Rename</span>
+                            </button>
                             <div className="h-px bg-[var(--border-color)]" />
                             <button
                               onClick={() => { handleDeleteClick(item.id, item.name, item.type); setActiveMenuId(null); }}
@@ -370,7 +408,14 @@ const Favorites: React.FC = () => {
                         className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-yellow-500/10 text-[var(--text-primary)] hover:text-yellow-500 transition-colors"
                       >
                         <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
-                        <span>Unfavorite</span>
+                        <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
+                      </button>
+                      <button
+                        onClick={() => handleRenameClick(item.id, item.name, item.type)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        <span>Rename</span>
                       </button>
                       <div className="h-px bg-[var(--border-color)]" />
                       <button
@@ -471,6 +516,104 @@ const Favorites: React.FC = () => {
               className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
             >
               {isDeleting ? "Moving..." : "Move to Trash"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename Modal */}
+      <Modal 
+        isOpen={isRenameModalOpen} 
+        onClose={() => !isRenaming && setIsRenameModalOpen(false)} 
+        title="Rename Item"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+              New Name
+            </label>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              style={{ 
+                backgroundColor: "var(--bg-secondary)", 
+                borderColor: "var(--border-color)",
+                color: "var(--text-primary)"
+              }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmRename();
+              }}
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={isRenaming}
+              onClick={() => setIsRenameModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmRename}
+              disabled={isRenaming || !newName.trim() || newName === itemToRename?.name}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {isRenaming ? "Renaming..." : "Rename"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Rename Modal */}
+      <Modal 
+        isOpen={isRenameModalOpen} 
+        onClose={() => !isRenaming && setIsRenameModalOpen(false)} 
+        title="Rename Item"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+              New Name
+            </label>
+            <input
+              type="text"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+              style={{ 
+                backgroundColor: "var(--bg-secondary)", 
+                borderColor: "var(--border-color)",
+                color: "var(--text-primary)"
+              }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmRename();
+              }}
+            />
+          </div>
+          
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={isRenaming}
+              onClick={() => setIsRenameModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmRename}
+              disabled={isRenaming || !newName.trim() || newName === itemToRename?.name}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
+            >
+              {isRenaming ? "Renaming..." : "Rename"}
             </button>
           </div>
         </div>

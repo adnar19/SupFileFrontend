@@ -158,3 +158,18 @@ export const toggleFavoriteApi = async (id: string, type: 'file' | 'folder') => 
     throw error;
   }
 };
+
+export const renameFileApi = async (id: string, name: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/files/${id}/rename`, { name }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error renaming file:", error);
+    throw error;
+  }
+};
