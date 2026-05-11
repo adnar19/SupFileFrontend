@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Grid3X3, List, Home, Star, Trash2, File, Folder, Image as ImageIcon, 
-  ChevronRight, Share2, FileText, Music, Video, 
-  Archive, Presentation, Table, Download, MoreVertical, ChevronLeft, Edit2, Eye 
+  Grid3X3, List, Home, Star, Trash2, Download, MoreVertical, ChevronLeft, Edit2, Eye,
+  ChevronRight, Share2, Folder
 } from 'lucide-react';
+import { getFileIcon, formatFileSize, getCustomFileType } from '../../utils/fileUtils';
 import { getFolderContents, deleteFolder, renameFolderApi } from '../../services/folder';
 import { deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
 import { useFileSystem } from '../../contexts/FileSystemContext';
@@ -57,38 +57,7 @@ const Dashboard: React.FC = () => {
     refreshTrigger, triggerRefresh
   } = useFileSystem();
 
-  const getIcon = (type: string, name: string) => {
-    if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
 
-    const extension = name.split('.').pop()?.toLowerCase();
-    switch (extension) {
-      case 'pdf': return <FileText className="w-5 h-5 text-red-500" />;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif': return <ImageIcon className="w-5 h-5 text-green-500" />;
-      case 'mp4':
-      case 'mov': return <Video className="w-5 h-5 text-purple-500" />;
-      case 'mp3':
-      case 'wav': return <Music className="w-5 h-5 text-pink-500" />;
-      case 'zip':
-      case 'rar': return <Archive className="w-5 h-5 text-orange-500" />;
-      case 'ppt':
-      case 'pptx': return <Presentation className="w-5 h-5 text-orange-600" />;
-      case 'xls':
-      case 'xlsx': return <Table className="w-5 h-5 text-emerald-600" />;
-      default: return <File className="w-5 h-5 text-slate-500" />;
-    }
-  };
-
-  const formatSize = (bytes: string) => {
-    const b = parseInt(bytes);
-    if (isNaN(b) || b === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(b) / Math.log(k));
-    return parseFloat((b / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  };
 
   const fetchData = async (page: number = 1) => {
     try {
@@ -113,29 +82,20 @@ const Dashboard: React.FC = () => {
           fileType: 'Folder',
           modified: new Date(f.updatedAt).toLocaleDateString(),
           size: '--',
-          icon: getIcon('folder', f.name),
+          icon: getFileIcon('folder', f.name),
           isFavorite: f.favorites?.length > 0
         }));
 
-        const fileItems: FileItem[] = files.map((f: any) => {
-          const extension = f.name.split('.').pop()?.toLowerCase();
-          let customType = f.mimeType?.split('/')[1]?.toUpperCase() || 'File';
-
-          if (['ppt', 'pptx'].includes(extension)) customType = 'PowerPoint';
-          if (['xls', 'xlsx'].includes(extension)) customType = 'Excel';
-          if (extension === 'pdf') customType = 'PDF Document';
-
-          return {
-            id: f.id,
-            name: f.name,
-            type: 'file',
-            fileType: customType,
-            modified: new Date(f.createdAt).toLocaleDateString(),
-            size: formatSize(f.size),
-            icon: getIcon('file', f.name),
-            isFavorite: f.favorites?.length > 0
-          };
-        });
+        const fileItems: FileItem[] = files.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: 'file',
+          fileType: getCustomFileType(f.mimeType, f.name),
+          modified: new Date(f.createdAt).toLocaleDateString(),
+          size: formatFileSize(f.size),
+          icon: getFileIcon('file', f.name),
+          isFavorite: f.favorites?.length > 0
+        }));
 
         setItems([...folderItems, ...fileItems]);
         setBreadcrumbs(bc);
