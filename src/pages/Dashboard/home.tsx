@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Grid3X3, List, Home, Star, Trash2, File, Folder, Image as ImageIcon, 
-  ChevronRight, Share2, BarChart3, FileText, Music, Video, 
-  Archive, Presentation, Table, Download, MoreVertical, ChevronLeft, Edit2 
+  ChevronRight, Share2, FileText, Music, Video, 
+  Archive, Presentation, Table, Download, MoreVertical, ChevronLeft, Edit2, Eye 
 } from 'lucide-react';
 import { getFolderContents, deleteFolder, renameFolderApi } from '../../services/folder';
 import { deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
@@ -10,6 +10,7 @@ import { useFileSystem } from '../../contexts/FileSystemContext';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
+import { PreviewModal } from '../../components/PreviewModal';
 import { AlertTriangle } from 'lucide-react';
 
 interface FileItem {
@@ -34,7 +35,7 @@ const Dashboard: React.FC = () => {
     totalItems: 0,
     limit: 10
   });
-  
+
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -43,19 +44,22 @@ const Dashboard: React.FC = () => {
   const [itemToRename, setItemToRename] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
-  
+
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
   // Menus
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-  
-  const { 
-    currentFolderId, setCurrentFolderId, 
-     setCurrentFolderName, 
-    refreshTrigger, triggerRefresh 
+
+  const {
+    currentFolderId, setCurrentFolderId,
+    setCurrentFolderName,
+    refreshTrigger, triggerRefresh
   } = useFileSystem();
 
   const getIcon = (type: string, name: string) => {
     if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
-    
+
     const extension = name.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf': return <FileText className="w-5 h-5 text-red-500" />;
@@ -93,7 +97,7 @@ const Dashboard: React.FC = () => {
       const res = await getFolderContents(currentFolderId || "root", page, pagination.limit);
       if (res.success) {
         const { folders, files, breadcrumbs: bc, currentFolder } = res.data;
-        
+
         if (currentFolder) {
           setCurrentFolderName(currentFolder.name);
           // Auto-sync currentFolderId if we just loaded root
@@ -116,7 +120,7 @@ const Dashboard: React.FC = () => {
         const fileItems: FileItem[] = files.map((f: any) => {
           const extension = f.name.split('.').pop()?.toLowerCase();
           let customType = f.mimeType?.split('/')[1]?.toUpperCase() || 'File';
-          
+
           if (['ppt', 'pptx'].includes(extension)) customType = 'PowerPoint';
           if (['xls', 'xlsx'].includes(extension)) customType = 'Excel';
           if (extension === 'pdf') customType = 'PDF Document';
@@ -204,6 +208,14 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handlePreviewClick = (item: FileItem) => {
+    if (item.type === 'file') {
+      setItemToPreview({ id: item.id, name: item.name, type: item.type });
+      setIsPreviewModalOpen(true);
+      setActiveMenuId(null);
+    }
+  };
+
   const handleShare = (id: string) => {
     console.log('Share item:', id);
   };
@@ -252,7 +264,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-full" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <div className="min-h-full flex flex-col">
-        
+
         {/* Header with Breadcrumbs and View Toggle */}
         <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[var(--bg-primary)]">
           <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
@@ -262,7 +274,7 @@ const Dashboard: React.FC = () => {
             {breadcrumbs.map((bc) => (
               <React.Fragment key={bc.id}>
                 <ChevronRight className="w-4 h-4" />
-                <button 
+                <button
                   onClick={() => handleFolderClick(bc.id)}
                   className={`hover:text-[var(--text-primary)] transition-colors ${currentFolderId === bc.id ? 'font-semibold text-[var(--text-primary)]' : ''}`}
                 >
@@ -273,13 +285,13 @@ const Dashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
-            <button 
+            <button
               onClick={() => setViewMode('list')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             >
               <List className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('grid')}
               className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
             >
@@ -313,15 +325,15 @@ const Dashboard: React.FC = () => {
                 </thead>
                 <tbody>
                   {items.map((item, index) => (
-                    <tr 
-                      key={item.id} 
-                      className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`} 
+                    <tr
+                      key={item.id}
+                      className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`}
                       style={{ borderColor: 'var(--border-color)' }}
                     >
                       <td className={`p-4 ${index === items.length - 1 ? 'rounded-bl-xl' : ''}`}>
-                        <div 
+                        <div
                           className="flex items-center space-x-3 cursor-pointer"
-                          onClick={() => item.type === 'folder' && handleFolderClick(item.id)}
+                          onClick={() => item.type === 'folder' ? handleFolderClick(item.id) : handlePreviewClick(item)}
                         >
                           {item.icon}
                           <span className="text-sm font-medium hover:text-blue-500 transition-colors">{item.name}</span>
@@ -344,7 +356,7 @@ const Dashboard: React.FC = () => {
 
                           {/* Dropdown Menu */}
                           {activeMenuId === item.id && (
-                            <div 
+                            <div
                               className="absolute right-8 top-10 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
                               style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
                               onClick={(e) => e.stopPropagation()}
@@ -357,6 +369,13 @@ const Dashboard: React.FC = () => {
                                   >
                                     <Download className="w-4 h-4" />
                                     <span>Download</span>
+                                  </button>
+                                  <button
+                                    onClick={() => handlePreviewClick(item)}
+                                    className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                    <span>Preview</span>
                                   </button>
                                   <button
                                     onClick={() => { handleShare(item.id); setActiveMenuId(null); }}
@@ -401,11 +420,11 @@ const Dashboard: React.FC = () => {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
               {items.map((item) => (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500/30 transition-all cursor-pointer group relative"
                   style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-                  onClick={() => item.type === 'folder' && handleFolderClick(item.id)}
+                  onClick={() => item.type === 'folder' ? handleFolderClick(item.id) : handlePreviewClick(item)}
                 >
                   {/* Action Menu Button */}
                   <div className="absolute top-2 right-2 z-10">
@@ -421,7 +440,7 @@ const Dashboard: React.FC = () => {
 
                     {/* Dropdown Menu */}
                     {activeMenuId === item.id && (
-                      <div 
+                      <div
                         className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
                         style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
                         onClick={(e) => e.stopPropagation()}
@@ -434,6 +453,13 @@ const Dashboard: React.FC = () => {
                             >
                               <Download className="w-4 h-4" />
                               <span>Download</span>
+                            </button>
+                            <button
+                              onClick={() => handlePreviewClick(item)}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>Preview</span>
                             </button>
                             <button
                               onClick={() => handleShare(item.id)}
@@ -488,7 +514,7 @@ const Dashboard: React.FC = () => {
               <p className="text-sm text-[var(--text-tertiary)]">
                 Showing <span className="font-medium text-[var(--text-primary)]">{((pagination.currentPage - 1) * pagination.limit) + 1}</span> to <span className="font-medium text-[var(--text-primary)]">{Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)}</span> of <span className="font-medium text-[var(--text-primary)]">{pagination.totalItems}</span> items
               </p>
-              
+
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
@@ -497,18 +523,17 @@ const Dashboard: React.FC = () => {
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                
+
                 {/* Page Numbers */}
                 <div className="flex items-center space-x-1">
                   {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
                     <button
                       key={page}
                       onClick={() => setPagination(prev => ({ ...prev, currentPage: page }))}
-                      className={`w-10 h-10 rounded-lg border text-sm font-medium transition-all ${
-                        pagination.currentPage === page 
-                        ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20' 
-                        : 'border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-                      }`}
+                      className={`w-10 h-10 rounded-lg border text-sm font-medium transition-all ${pagination.currentPage === page
+                          ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20'
+                          : 'border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
+                        }`}
                     >
                       {page}
                     </button>
@@ -529,9 +554,9 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Modal 
-        isOpen={isDeleteModalOpen} 
-        onClose={() => !isDeleting && setIsDeleteModalOpen(false)} 
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
         title="Move to Trash"
       >
         <div className="space-y-4">
@@ -541,7 +566,7 @@ const Dashboard: React.FC = () => {
               Are you sure you want to move <span className="font-bold text-orange-500">"{itemToDelete?.name}"</span> to trash?
             </p>
           </div>
-          
+
           <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
             You can restore this item from the Trash section later.
           </p>
@@ -568,9 +593,9 @@ const Dashboard: React.FC = () => {
       </Modal>
 
       {/* Rename Modal */}
-      <Modal 
-        isOpen={isRenameModalOpen} 
-        onClose={() => !isRenaming && setIsRenameModalOpen(false)} 
+      <Modal
+        isOpen={isRenameModalOpen}
+        onClose={() => !isRenaming && setIsRenameModalOpen(false)}
         title="Rename Item"
       >
         <div className="space-y-4">
@@ -583,8 +608,8 @@ const Dashboard: React.FC = () => {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              style={{ 
-                backgroundColor: "var(--bg-secondary)", 
+              style={{
+                backgroundColor: "var(--bg-secondary)",
                 borderColor: "var(--border-color)",
                 color: "var(--text-primary)"
               }}
@@ -594,7 +619,7 @@ const Dashboard: React.FC = () => {
               }}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-2">
             <button
               type="button"
@@ -615,6 +640,13 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        file={itemToPreview}
+      />
     </div>
   );
 };

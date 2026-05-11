@@ -103,14 +103,14 @@ const Navbar: React.FC = () => {
 
   const confirmUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedFile || !currentFolderId) {
-      toast.error("Please select a file and ensure you are in a folder");
+    if (!selectedFile) {
+      toast.error("Please select a file");
       return;
     }
 
     try {
       setIsUploading(true);
-      const res = await uploadFile(selectedFile, currentFolderId);
+      const res = await uploadFile(selectedFile, currentFolderId || "root");
       if (res && res.success) {
         toast.success("File uploaded successfully");
         triggerRefresh();

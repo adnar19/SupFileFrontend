@@ -7,7 +7,9 @@ export const uploadFile = async (file: File, folderId: string) => {
     const token = Cookies.get("token");
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("folderId", folderId);
+    if (folderId && folderId !== "root") {
+      formData.append("folderId", folderId);
+    }
 
     const response = await axios.post(`${API_URL}/files/upload`, formData, {
       headers: {

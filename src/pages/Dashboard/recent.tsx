@@ -2,14 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Grid3X3, List, Home, Clock, Star, Trash2, File, Folder, 
-  ChevronRight, Share2, BarChart3, FileText, Music, Video, 
-  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle, Image as ImageIcon, Edit2 
+  ChevronRight, Share2, FileText, Music, Video, 
+  Archive, Presentation, Table, Download, MoreVertical, AlertTriangle, Image as ImageIcon, Edit2, Eye 
 } from 'lucide-react';
 import { getUserFiles, deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
 import { renameFolderApi } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
+import { PreviewModal } from '../../components/PreviewModal';
+import { useFileSystem } from '../../contexts/FileSystemContext';
 
 interface FileItem {
   id: string;
@@ -26,7 +28,8 @@ const Recent: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const { setCurrentFolderId, setCurrentFolderName, refreshTrigger } = useFileSystem();
+
   // Menus
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
 
@@ -40,9 +43,12 @@ const Recent: React.FC = () => {
   const [newName, setNewName] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
 
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
   const getIcon = (type: string, name: string) => {
     if (type === 'folder') return <Folder className="w-5 h-5 text-blue-500" />;
-    
+
     const extension = name.split('.').pop()?.toLowerCase();
     switch (extension) {
       case 'pdf': return <FileText className="w-5 h-5 text-red-500" />;
@@ -108,6 +114,11 @@ const Recent: React.FC = () => {
 
   useEffect(() => {
     fetchData();
+  }, [refreshTrigger]);
+
+  useEffect(() => {
+    setCurrentFolderId(undefined);
+    setCurrentFolderName("Recent Files");
   }, []);
 
   // Close menu on click outside
@@ -152,6 +163,14 @@ const Recent: React.FC = () => {
       toast.error("Failed to rename");
     } finally {
       setIsRenaming(false);
+    }
+  };
+
+  const handlePreviewClick = (item: FileItem) => {
+    if (item.type === 'file') {
+      setItemToPreview({ id: item.id, name: item.name, type: item.type });
+      setIsPreviewModalOpen(true);
+      setActiveMenuId(null);
     }
   };
 
@@ -213,13 +232,13 @@ const Recent: React.FC = () => {
         </div>
 
         <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
-          <button 
+          <button
             onClick={() => setViewMode('list')}
             className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
           >
             <List className="w-4 h-4" />
           </button>
-          <button 
+          <button
             onClick={() => setViewMode('grid')}
             className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
           >
@@ -253,15 +272,18 @@ const Recent: React.FC = () => {
               </thead>
               <tbody>
                 {items.map((item, index) => (
-                  <tr 
-                    key={item.id} 
-                    className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`} 
+                  <tr
+                    key={item.id}
+                    className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`}
                     style={{ borderColor: 'var(--border-color)' }}
                   >
                     <td className={`p-4 ${index === items.length - 1 ? 'rounded-bl-xl' : ''}`}>
-                      <div className="flex items-center space-x-3">
+                      <div 
+                        className="flex items-center space-x-3 cursor-pointer"
+                        onClick={() => item.type === 'folder' ? null : handlePreviewClick(item)}
+                      >
                         {item.icon}
-                        <span className="text-sm font-medium">{item.name}</span>
+                        <span className="text-sm font-medium hover:text-blue-500 transition-colors">{item.name}</span>
                       </div>
                     </td>
                     <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.fileType}</td>
@@ -281,7 +303,7 @@ const Recent: React.FC = () => {
 
                         {/* Dropdown Menu */}
                         {activeMenuId === item.id && (
-                          <div 
+                          <div
                             className="absolute right-8 top-10 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
                             style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
                             onClick={(e) => e.stopPropagation()}
@@ -292,6 +314,13 @@ const Recent: React.FC = () => {
                             >
                               <Download className="w-4 h-4" />
                               <span>Download</span>
+                            </button>
+                            <button
+                              onClick={() => handlePreviewClick(item)}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                            >
+                              <Eye className="w-4 h-4" />
+                              <span>Preview</span>
                             </button>
                             <button
                               onClick={() => { handleShare(item.id); setActiveMenuId(null); }}
@@ -334,10 +363,11 @@ const Recent: React.FC = () => {
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
             {items.map((item) => (
-              <div 
-                key={item.id} 
+              <div
+                key={item.id}
                 className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500/30 transition-all cursor-pointer group relative"
                 style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+                onClick={() => item.type === 'folder' ? null : handlePreviewClick(item)}
               >
                 {/* Action Menu Button */}
                 <div className="absolute top-2 right-2 z-10">
@@ -353,7 +383,7 @@ const Recent: React.FC = () => {
 
                   {/* Dropdown Menu */}
                   {activeMenuId === item.id && (
-                    <div 
+                    <div
                       className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
                       style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
                       onClick={(e) => e.stopPropagation()}
@@ -364,6 +394,13 @@ const Recent: React.FC = () => {
                       >
                         <Download className="w-4 h-4" />
                         <span>Download</span>
+                      </button>
+                      <button
+                        onClick={() => handlePreviewClick(item)}
+                        className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span>Preview</span>
                       </button>
                       <button
                         onClick={() => handleShare(item.id)}
@@ -412,9 +449,9 @@ const Recent: React.FC = () => {
       </div>
 
       {/* Delete Confirmation Modal */}
-      <Modal 
-        isOpen={isDeleteModalOpen} 
-        onClose={() => !isDeleting && setIsDeleteModalOpen(false)} 
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
         title="Move to Trash"
       >
         <div className="space-y-4">
@@ -424,7 +461,7 @@ const Recent: React.FC = () => {
               Are you sure you want to move <span className="font-bold text-orange-500">"{itemToDelete?.name}"</span> to trash?
             </p>
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-2">
             <button
               type="button"
@@ -447,9 +484,9 @@ const Recent: React.FC = () => {
       </Modal>
 
       {/* Rename Modal */}
-      <Modal 
-        isOpen={isRenameModalOpen} 
-        onClose={() => !isRenaming && setIsRenameModalOpen(false)} 
+      <Modal
+        isOpen={isRenameModalOpen}
+        onClose={() => !isRenaming && setIsRenameModalOpen(false)}
         title="Rename Item"
       >
         <div className="space-y-4">
@@ -462,8 +499,8 @@ const Recent: React.FC = () => {
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              style={{ 
-                backgroundColor: "var(--bg-secondary)", 
+              style={{
+                backgroundColor: "var(--bg-secondary)",
                 borderColor: "var(--border-color)",
                 color: "var(--text-primary)"
               }}
@@ -473,7 +510,7 @@ const Recent: React.FC = () => {
               }}
             />
           </div>
-          
+
           <div className="flex justify-end space-x-3 pt-2">
             <button
               type="button"
@@ -494,6 +531,13 @@ const Recent: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* Preview Modal */}
+      <PreviewModal
+        isOpen={isPreviewModalOpen}
+        onClose={() => setIsPreviewModalOpen(false)}
+        file={itemToPreview}
+      />
     </div>
   );
 };
