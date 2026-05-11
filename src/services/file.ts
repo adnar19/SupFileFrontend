@@ -142,3 +142,19 @@ export const getFavoriteFiles = async (page: number = 1, limit: number = 10) => 
     throw error;
   }
 };
+
+export const toggleFavoriteApi = async (id: string, type: 'file' | 'folder') => {
+  try {
+    const token = Cookies.get("token");
+    const payload = type === 'folder' ? { folderId: id } : { fileId: id };
+    const response = await axios.post(`${API_URL}/favorites/toggle`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error toggling favorite:", error);
+    throw error;
+  }
+};

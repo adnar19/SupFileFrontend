@@ -223,25 +223,25 @@ const Trash: React.FC = () => {
             <p className="text-lg font-medium">Trash is empty</p>
           </div>
         ) : viewMode === 'list' ? (
-          <div className="rounded-xl border overflow-hidden shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-            <table className="w-full text-left border-collapse">
+          <div className="rounded-xl border overflow-visible shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
+            <table className="w-full text-left border-separate border-spacing-0">
               <thead>
                 <tr className="border-b" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-tertiary)' }}>
-                  <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Name</th>
+                  <th className="p-4 text-sm font-semibold rounded-tl-xl" style={{ color: 'var(--text-secondary)' }}>Name</th>
                   <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Type</th>
                   <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Size</th>
                   <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Deleted At</th>
-                  <th className="p-4 text-sm font-semibold text-center" style={{ color: 'var(--text-secondary)' }}>Actions</th>
+                  <th className="p-4 text-sm font-semibold text-center rounded-tr-xl" style={{ color: 'var(--text-secondary)' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <tr 
                     key={item.id} 
-                    className="border-b hover:bg-[var(--bg-tertiary)] transition-colors group" 
+                    className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`} 
                     style={{ borderColor: 'var(--border-color)' }}
                   >
-                    <td className="p-4">
+                    <td className={`p-4 ${index === items.length - 1 ? 'rounded-bl-xl' : ''}`}>
                       <div className="flex items-center space-x-3">
                         {item.icon}
                         <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
@@ -250,22 +250,41 @@ const Trash: React.FC = () => {
                     <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.fileType}</td>
                     <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.size}</td>
                     <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.deletedAt}</td>
-                    <td className="p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <button 
-                          onClick={() => handleRestore(item.id, item.type)}
-                          className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-green-500 transition-all"
-                          title="Restore"
+                    <td className={`p-4 relative ${index === items.length - 1 ? 'rounded-br-xl' : ''}`}>
+                      <div className="flex items-center justify-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                          }}
+                          className="p-1 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
                         >
-                          <RotateCcw className="w-4 h-4" />
+                          <MoreVertical className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handlePermanentDeleteClick(item.id, item.name, item.type)}
-                          className="p-2 rounded-lg hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-red-500 transition-all"
-                          title="Delete Permanently"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeMenuId === item.id && (
+                          <div 
+                            className="absolute right-8 top-10 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
+                            style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              onClick={() => { handleRestore(item.id, item.type); setActiveMenuId(null); }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-green-500/10 text-[var(--text-primary)] hover:text-green-500 transition-colors"
+                            >
+                              <RotateCcw className="w-4 h-4" />
+                              <span>Restore</span>
+                            </button>
+                            <button
+                              onClick={() => { handlePermanentDeleteClick(item.id, item.name, item.type); setActiveMenuId(null); }}
+                              className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>
