@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Grid3X3, List, Home, Download, MoreVertical, AlertTriangle, Star, Trash2, ChevronLeft, Edit2, Eye,
-  ChevronRight, Share2, File
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getFileIcon, formatFileSize, getCustomFileType } from '../../utils/fileUtils';
 import { getUserFiles, deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
 import { renameFolderApi } from '../../services/folder';
@@ -12,17 +8,9 @@ import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
 import { PreviewModal } from '../../components/PreviewModal';
 import { useFileSystem } from '../../contexts/FileSystemContext';
-
-interface FileItem {
-  id: string;
-  name: string;
-  type: 'folder' | 'file';
-  fileType?: string;
-  modified: string;
-  size: string;
-  icon: React.ReactNode;
-  isFavorite: boolean;
-}
+import ViewToggle from '../../components/ViewToggle';
+import FileExplorer, { type FileItem } from '../../components/FileExplorer';
+import Breadcrumbs from '../../components/Breadcrumbs';
 
 const AllFiles: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -36,10 +24,7 @@ const AllFiles: React.FC = () => {
     limit: 20
   });
 
-  // Menus
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
-
-  // Modals
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -51,8 +36,6 @@ const AllFiles: React.FC = () => {
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
-
-
 
   const fetchData = async (page: number = 1) => {
     try {
@@ -89,14 +72,24 @@ const AllFiles: React.FC = () => {
     setCurrentFolderName("All Files");
   }, []);
 
-  // Close menu on click outside
-  useEffect(() => {
-    const handleClickOutside = () => setActiveMenuId(null);
-    if (activeMenuId) {
-      document.addEventListener('click', handleClickOutside);
+  const handleItemClick = (item: FileItem) => {
+    if (item.type === 'file') {
+      setItemToPreview(item);
+      setIsPreviewModalOpen(true);
     }
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, [activeMenuId]);
+  };
+
+  const handleFavoriteToggle = async (id: string, type: 'file' | 'folder') => {
+    try {
+      await toggleFavoriteApi(id, type);
+      setItems(items.map(item => 
+        item.id === id ? { ...item, isFavorite: !item.isFavorite } : item
+      ));
+      toast.success("Favorite updated");
+    } catch (error) {
+      toast.error("Failed to update favorite");
+    }
+  };
 
   const handleDownload = async (id: string, name: string) => {
     try {
@@ -107,26 +100,10 @@ const AllFiles: React.FC = () => {
       link.setAttribute('download', name);
       document.body.appendChild(link);
       link.click();
-      link.parentNode?.removeChild(link);
+      link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error("Failed to download file");
-    } finally {
-      setActiveMenuId(null);
-    }
-  };
-
-  const handleShare = (id: string) => {
-    console.log('Share item:', id);
-  };
-
-  const toggleFavorite = async (id: string, type: 'file' | 'folder') => {
-    try {
-      await toggleFavoriteApi(id, type);
-      setItems(items.map(item => item.id === id ? { ...item, isFavorite: !item.isFavorite } : item));
-      toast.success("Favorite status updated");
-    } catch (error) {
-      toast.error("Failed to update favorite status");
+      toast.error("Download failed");
     }
   };
 
@@ -134,20 +111,26 @@ const AllFiles: React.FC = () => {
     setItemToRename({ id, name, type });
     setNewName(name);
     setIsRenameModalOpen(true);
-    setActiveMenuId(null);
   };
 
-  const confirmRename = async () => {
-    if (!itemToRename || !newName.trim()) return;
+  const handleDeleteClick = (id: string, name: string) => {
+    setItemToDelete({ id, name });
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmRename = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!itemToRename || !newName.trim() || newName === itemToRename.name) return;
+
     try {
       setIsRenaming(true);
       if (itemToRename.type === 'file') {
-        await renameFileApi(itemToRename.id, newName.trim());
+        await renameFileApi(itemToRename.id, newName);
       } else {
-        await renameFolderApi(itemToRename.id, newName.trim());
+        await renameFolderApi(itemToRename.id, newName);
       }
-      setItems(items.map(item => item.id === itemToRename.id ? { ...item, name: newName.trim() } : item));
       toast.success("Renamed successfully");
+      fetchData(pagination.currentPage);
       setIsRenameModalOpen(false);
     } catch (error) {
       toast.error("Failed to rename");
@@ -156,402 +139,124 @@ const AllFiles: React.FC = () => {
     }
   };
 
-  const handlePreviewClick = (item: FileItem) => {
-    if (item.type === 'file') {
-      setItemToPreview({ id: item.id, name: item.name, type: item.type });
-      setIsPreviewModalOpen(true);
-      setActiveMenuId(null);
-    }
-  };
-
-  const handleDeleteClick = (id: string, name: string) => {
-    setItemToDelete({ id, name });
-    setIsDeleteModalOpen(true);
-    setActiveMenuId(null);
-  };
-
   const confirmDelete = async () => {
     if (!itemToDelete) return;
     try {
       setIsDeleting(true);
       await deleteFile(itemToDelete.id);
-      toast.success("Item moved to trash");
+      toast.success("Deleted successfully");
       fetchData(pagination.currentPage);
       setIsDeleteModalOpen(false);
     } catch (error) {
-      toast.error("Failed to delete item");
+      toast.error("Failed to delete");
     } finally {
       setIsDeleting(false);
-      setItemToDelete(null);
     }
   };
 
   return (
-    <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[var(--bg-primary)]">
-        <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          <Link to="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
-            <Home className="w-4 h-4" />
-          </Link>
-          <ChevronRight className="w-4 h-4" />
-          <span className="font-semibold text-[var(--text-primary)]">All Files (Flat List)</span>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center bg-[var(--bg-tertiary)] rounded-lg p-1 border border-[var(--border-color)]">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-[var(--card-bg)] shadow-sm text-blue-500' : 'text-[var(--text-tertiary)] hover:text-[var(--text-primary)]'}`}
-            >
-              <Grid3X3 className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
+        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">
+          All Files
+        </h1>
+        <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 p-6">
-        {loading ? (
-          <div className="h-64 flex justify-center items-center">
-            <SyncLoader color="#1076fc" size={15} />
-          </div>
-        ) : items.length === 0 ? (
-          <div className="h-64 flex flex-col justify-center items-center space-y-4 opacity-50">
-            <File className="w-16 h-16" />
-            <p className="text-lg font-medium">No files found</p>
-          </div>
-        ) : (
-          <>
-            {viewMode === 'list' ? (
-              <div className="rounded-xl border overflow-visible shadow-sm" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                <table className="w-full text-left border-separate border-spacing-0">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: 'var(--border-color)', backgroundColor: 'var(--bg-tertiary)' }}>
-                      <th className="p-4 text-sm font-semibold rounded-tl-xl" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                      <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Type</th>
-                      <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Size</th>
-                      <th className="p-4 text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Modified</th>
-                      <th className="p-4 text-sm font-semibold text-center rounded-tr-xl" style={{ color: 'var(--text-secondary)' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((item, index) => (
-                      <tr
-                        key={item.id}
-                        className={`border-b hover:bg-[var(--bg-tertiary)] transition-colors group ${index === items.length - 1 ? 'last:border-b-0' : ''}`}
-                        style={{ borderColor: 'var(--border-color)' }}
-                      >
-                        <td className={`p-4 ${index === items.length - 1 ? 'rounded-bl-xl' : ''}`}>
-                          <div 
-                          className="flex items-center space-x-3 cursor-pointer"
-                          onClick={() => item.type === 'folder' ? null : handlePreviewClick(item)}
-                        >
-                            {item.icon}
-                            <span className="text-sm font-medium">{item.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.fileType}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.size}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{item.modified}</td>
-                        <td className={`p-4 relative ${index === items.length - 1 ? 'rounded-br-xl' : ''}`}>
-                          <div className="flex items-center justify-center">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMenuId(activeMenuId === item.id ? null : item.id);
-                              }}
-                              className="p-1 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
+      <Breadcrumbs 
+        items={[]} 
+        onHomeClick={() => {}}
+        onItemClick={() => {}}
+        currentPageName="All Files"
+      />
 
-                            {/* Dropdown Menu */}
-                            {activeMenuId === item.id && (
-                              <div
-                                className="absolute right-8 top-10 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
-                                style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  onClick={() => { handleDownload(item.id, item.name); setActiveMenuId(null); }}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                                >
-                                  <Download className="w-4 h-4" />
-                                  <span>Download</span>
-                                </button>
-                                <button
-                                  onClick={() => handlePreviewClick(item)}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                  <span>Preview</span>
-                                </button>
-                                <button
-                                  onClick={() => { handleShare(item.id); setActiveMenuId(null); }}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                                >
-                                  <Share2 className="w-4 h-4" />
-                                  <span>Share</span>
-                                </button>
-                                <button
-                                  onClick={() => { toggleFavorite(item.id, item.type); setActiveMenuId(null); }}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-yellow-500/10 text-[var(--text-primary)] hover:text-yellow-500 transition-colors"
-                                >
-                                  <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
-                                  <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
-                                </button>
-                                <button
-                                  onClick={() => handleRenameClick(item.id, item.name, item.type)}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                                >
-                                  <Edit2 className="w-4 h-4" />
-                                  <span>Rename</span>
-                                </button>
-                                <div className="h-px bg-[var(--border-color)]" />
-                                <button
-                                  onClick={() => { handleDeleteClick(item.id, item.name); setActiveMenuId(null); }}
-                                  className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  <span>Delete</span>
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
-                {items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex flex-col items-center p-4 rounded-xl border hover:border-blue-500/30 transition-all cursor-pointer group relative"
-                    style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-                    onClick={() => item.type === 'folder' ? null : handlePreviewClick(item)}
-                  >
-                    {/* Action Menu Button */}
-                    <div className="absolute top-2 right-2 z-10">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveMenuId(activeMenuId === item.id ? null : item.id);
-                        }}
-                        className="p-1 rounded-full hover:bg-[var(--bg-secondary)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4" />
-                      </button>
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <SyncLoader color="#3b82f6" size={10} />
+          <p className="text-[var(--text-tertiary)] animate-pulse font-medium">Scanning your library...</p>
+        </div>
+      ) : (
+        <FileExplorer 
+          items={items}
+          viewMode={viewMode}
+          activeMenuId={activeMenuId}
+          setActiveMenuId={setActiveMenuId}
+          onItemClick={handleItemClick}
+          onFavoriteToggle={handleFavoriteToggle}
+          onDownload={handleDownload}
+          onRename={handleRenameClick}
+          onDelete={handleDeleteClick}
+        />
+      )}
 
-                      {/* Dropdown Menu */}
-                      {activeMenuId === item.id && (
-                        <div
-                          className="absolute right-0 mt-1 w-44 rounded-lg shadow-xl border z-20 overflow-hidden"
-                          style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <button
-                            onClick={() => { handleDownload(item.id, item.name); setActiveMenuId(null); }}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                          >
-                            <Download className="w-4 h-4" />
-                            <span>Download</span>
-                          </button>
-                          <button
-                            onClick={() => handlePreviewClick(item)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                          >
-                            <Eye className="w-4 h-4" />
-                            <span>Preview</span>
-                          </button>
-                          <button
-                            onClick={() => { handleShare(item.id); setActiveMenuId(null); }}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                          >
-                            <Share2 className="w-4 h-4" />
-                            <span>Share</span>
-                          </button>
-                          <button
-                            onClick={() => { toggleFavorite(item.id, item.type); setActiveMenuId(null); }}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-yellow-500/10 text-[var(--text-primary)] hover:text-yellow-500 transition-colors"
-                          >
-                            <Star className="w-4 h-4" fill={item.isFavorite ? 'currentColor' : 'none'} />
-                            <span>{item.isFavorite ? 'Unfavorite' : 'Favorite'}</span>
-                          </button>
-                          <button
-                            onClick={() => handleRenameClick(item.id, item.name, item.type)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-blue-500/10 text-[var(--text-primary)] hover:text-blue-500 transition-colors"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Rename</span>
-                          </button>
-                          <div className="h-px bg-[var(--border-color)]" />
-                          <button
-                            onClick={() => handleDeleteClick(item.id, item.name)}
-                            className="w-full flex items-center space-x-2 px-3 py-2 text-sm hover:bg-red-500/10 text-red-500 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="mb-3 transform group-hover:scale-105 transition-transform">
-                      <div className="w-12 h-12 flex items-center justify-center">
-                        {item.icon}
-                      </div>
-                    </div>
-                    <span className="text-sm font-medium text-center truncate w-full mb-1" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
-                    <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{item.size}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Pagination Controls */}
-            <div className="mt-8 flex items-center justify-between px-2">
-              <p className="text-sm text-[var(--text-tertiary)]">
-                Showing <span className="font-medium text-[var(--text-primary)]">{((pagination.currentPage - 1) * pagination.limit) + 1}</span> to <span className="font-medium text-[var(--text-primary)]">{Math.min(pagination.currentPage * pagination.limit, pagination.totalItems)}</span> of <span className="font-medium text-[var(--text-primary)]">{pagination.totalItems}</span> items
-              </p>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
-                  disabled={pagination.currentPage === 1}
-                  className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-
-                {/* Page Numbers */}
-                <div className="flex items-center space-x-1">
-                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setPagination(prev => ({ ...prev, currentPage: page }))}
-                      className={`w-10 h-10 rounded-lg border text-sm font-medium transition-all ${pagination.currentPage === page
-                          ? 'bg-blue-500 border-blue-500 text-white shadow-lg shadow-blue-500/20'
-                          : 'border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)]'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
-                  disabled={pagination.currentPage === pagination.totalPages}
-                  className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] text-[var(--text-secondary)] hover:bg-[var(--bg-tertiary)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
-      {/* Delete Modal */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={() => !isDeleting && setIsDeleteModalOpen(false)}
-        title="Move to Trash"
-      >
-        <div className="space-y-4">
-          <div className="flex items-center space-x-3 p-3 rounded-lg bg-orange-500/10 border border-orange-500/20">
-            <AlertTriangle className="w-6 h-6 text-orange-500 flex-shrink-0" />
-            <p className="text-sm" style={{ color: "var(--text-primary)" }}>
-              Are you sure you want to move <span className="font-bold text-orange-500">"{itemToDelete?.name}"</span> to trash?
-            </p>
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-2">
+      {!loading && pagination.totalPages > 1 && (
+        <div className="mt-12 flex items-center justify-center space-x-2">
+          <button 
+            disabled={pagination.currentPage === 1}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+            className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          {[...Array(pagination.totalPages)].map((_, i) => (
             <button
-              type="button"
-              disabled={isDeleting}
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+              key={i + 1}
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: i + 1 }))}
+              className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                pagination.currentPage === i + 1 
+                  ? 'bg-blue-500 text-white shadow-lg scale-105' 
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)]'
+              }`}
             >
-              Cancel
+              {i + 1}
             </button>
-            <button
-              onClick={confirmDelete}
-              disabled={isDeleting}
-              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
-            >
-              {isDeleting ? "Moving..." : "Move to Trash"}
+          ))}
+
+          <button 
+            disabled={pagination.currentPage === pagination.totalPages}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+            className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
+
+      {/* Modals */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Delete File">
+        <div className="p-4 text-center">
+          <p className="mb-6 text-[var(--text-secondary)]">
+            Are you sure you want to delete <span className="font-bold text-[var(--text-primary)]">{itemToDelete?.name}</span>?
+          </p>
+          <div className="flex justify-center space-x-3">
+            <button onClick={() => setIsDeleteModalOpen(false)} className="px-6 py-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">Cancel</button>
+            <button onClick={confirmDelete} disabled={isDeleting} className="px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50">
+              {isDeleting ? "Deleting..." : "Delete"}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* Rename Modal */}
-      <Modal
-        isOpen={isRenameModalOpen}
-        onClose={() => !isRenaming && setIsRenameModalOpen(false)}
-        title="Rename Item"
-      >
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-              New Name
-            </label>
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-              style={{
-                backgroundColor: "var(--bg-secondary)",
-                borderColor: "var(--border-color)",
-                color: "var(--text-primary)"
-              }}
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') confirmRename();
-              }}
-            />
-          </div>
-
-          <div className="flex justify-end space-x-3 pt-2">
-            <button
-              type="button"
-              disabled={isRenaming}
-              onClick={() => setIsRenameModalOpen(false)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmRename}
-              disabled={isRenaming || !newName.trim() || newName === itemToRename?.name}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Item">
+        <form onSubmit={confirmRename} className="p-4 space-y-4">
+          <input 
+            type="text" 
+            value={newName} 
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] outline-none focus:border-blue-500 transition-all"
+            autoFocus
+          />
+          <div className="flex justify-end space-x-3">
+            <button type="button" onClick={() => setIsRenameModalOpen(false)} className="px-6 py-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">Cancel</button>
+            <button type="submit" disabled={isRenaming} className="px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50">
               {isRenaming ? "Renaming..." : "Rename"}
             </button>
           </div>
-        </div>
+        </form>
       </Modal>
 
-      {/* Preview Modal */}
-      <PreviewModal
-        isOpen={isPreviewModalOpen}
-        onClose={() => setIsPreviewModalOpen(false)}
-        file={itemToPreview}
-      />
+      <PreviewModal isOpen={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} file={itemToPreview} />
     </div>
   );
 };
