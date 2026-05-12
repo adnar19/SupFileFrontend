@@ -80,3 +80,18 @@ export const renameFolderApi = async (id: string, name: string) => {
     throw error;
   }
 };
+
+export const moveFolderApi = async (id: string, parentId: string | null) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/move`, { parentId }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error moving folder:", error);
+    throw error;
+  }
+};

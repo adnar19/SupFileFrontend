@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getFileIcon, formatFileSize, getCustomFileType } from '../../utils/fileUtils';
-import { getFolderContents, deleteFolder, renameFolderApi } from '../../services/folder';
+import { getFolderContents, deleteFolder, renameFolderApi, moveFolderApi } from '../../services/folder';
 import { deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
 import { useFileSystem } from '../../contexts/FileSystemContext';
 import { SyncLoader } from 'react-spinners';
@@ -218,11 +218,7 @@ const Dashboard: React.FC = () => {
       if (itemToMove.type === 'file') {
         await moveFileApi(itemToMove.id, targetFolderId);
       } else {
-        // Optionnel: implémenter moveFolderApi si nécessaire
-        // Pour l'instant on se concentre sur les fichiers comme demandé
-        toast.info("Move for folders is coming soon");
-        setIsMoveModalOpen(false);
-        return;
+        await moveFolderApi(itemToMove.id, targetFolderId);
       }
       toast.success("Moved successfully");
       triggerRefresh();

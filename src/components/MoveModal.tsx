@@ -45,9 +45,17 @@ const MoveModal: React.FC<MoveModalProps> = ({ isOpen, onClose, onConfirm, itemN
 
   useEffect(() => {
     if (isOpen) {
+      setCurrentId(null);
+      setBreadcrumbs([]);
+      fetchFolders(null);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && currentId !== null) {
       fetchFolders(currentId);
     }
-  }, [isOpen, currentId]);
+  }, [currentId]);
 
   const handleFolderClick = (id: string) => {
     setCurrentId(id);

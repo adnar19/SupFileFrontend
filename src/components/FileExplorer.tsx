@@ -171,19 +171,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                             <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                             <span className="font-medium">Rename</span>
                           </button>
-                          {onMove && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onMove(item.id, item.name, item.type);
-                                setActiveMenuId(null);
-                              }}
-                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                            >
-                              <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                              <span className="font-medium">Move</span>
-                            </button>
-                          )}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onMove?.(item.id, item.name, item.type);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                          >
+                            <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                            <span className="font-medium">Move</span>
+                          </button>
                           {item.type === 'file' && (
                             <button 
                               onClick={(e) => {
@@ -303,19 +301,17 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                 <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                 <span className="font-medium">Rename</span>
               </button>
-              {onMove && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onMove(item.id, item.name, item.type);
-                    setActiveMenuId(null);
-                  }}
-                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                >
-                  <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                  <span className="font-medium">Move</span>
-                </button>
-              )}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMove?.(item.id, item.name, item.type);
+                  setActiveMenuId(null);
+                }}
+                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+              >
+                <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                <span className="font-medium">Move</span>
+              </button>
               {item.type === 'file' && (
                 <button 
                   onClick={(e) => {

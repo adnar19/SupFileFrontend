@@ -13,6 +13,7 @@ import FileExplorer, { type FileItem } from '../../components/FileExplorer';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import MoveModal from '../../components/MoveModal';
 import { moveFileApi } from '../../services/file';
+import { moveFolderApi } from '../../services/folder';
 
 const Favorites: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -184,7 +185,11 @@ const Favorites: React.FC = () => {
     if (!itemToMove) return;
     try {
       setIsMoving(true);
-      await moveFileApi(itemToMove.id, targetFolderId);
+      if (itemToMove.type === 'file') {
+        await moveFileApi(itemToMove.id, targetFolderId);
+      } else {
+        await moveFolderApi(itemToMove.id, targetFolderId);
+      }
       toast.success("Moved successfully");
       fetchData(pagination.currentPage);
       setIsMoveModalOpen(false);

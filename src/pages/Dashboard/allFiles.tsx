@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getFileIcon, formatFileSize, getCustomFileType } from '../../utils/fileUtils';
 import { getUserFiles, deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
-import { renameFolderApi } from '../../services/folder';
+import { renameFolderApi, moveFolderApi } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
@@ -169,7 +169,11 @@ const AllFiles: React.FC = () => {
     if (!itemToMove) return;
     try {
       setIsMoving(true);
-      await moveFileApi(itemToMove.id, targetFolderId);
+      if (itemToMove.type === 'file') {
+        await moveFileApi(itemToMove.id, targetFolderId);
+      } else {
+        await moveFolderApi(itemToMove.id, targetFolderId);
+      }
       toast.success("Moved successfully");
       fetchData(pagination.currentPage);
       setIsMoveModalOpen(false);

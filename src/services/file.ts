@@ -179,7 +179,7 @@ export const renameFileApi = async (id: string, name: string) => {
 export const moveFileApi = async (id: string, parentId: string | null) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.put(`${API_URL}/files/${id}/move`, { parentId }, {
+    const response = await axios.put(`${API_URL}/files/${id}/move`, { folderId: parentId }, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
