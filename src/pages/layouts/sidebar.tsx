@@ -1,10 +1,15 @@
 import { HardDrive, File, Clock, Star, Trash2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import useAuth from "../../hooks/useAuth";
+import { formatFileSize } from "../../utils/fileUtils";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const storageUsed = 45.7;
-  const storageTotal = 100;
+  const { user } = useAuth();
+  
+  const storageUsed = user?.storageUsed ? parseInt(user.storageUsed) : 0;
+  const storageTotal = user?.storageQuota ? parseInt(user.storageQuota) : 1; // Avoid division by zero
+  const storagePercent = Math.min((storageUsed / storageTotal) * 100, 100);
   const sidebarItems = [
     {
       icon: <HardDrive className="w-5 h-5" />,
@@ -100,16 +105,16 @@ const Sidebar: React.FC = () => {
               className="flex justify-between text-xs"
               style={{ color: "var(--text-tertiary)" }}
             >
-              <span>{storageUsed} GB used</span>
-              <span>{storageTotal} GB total</span>
+              <span>{formatFileSize(storageUsed)} used</span>
+              <span>{formatFileSize(storageTotal)} total</span>
             </div>
             <div
               className="w-full rounded-full h-2"
               style={{ backgroundColor: "var(--bg-tertiary)" }}
             >
               <div
-                className="bg-blue-500 h-2 rounded-full"
-                style={{ width: `${(storageUsed / storageTotal) * 100}%` }}
+                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${storagePercent}%` }}
               />
             </div>
           </div>

@@ -11,6 +11,8 @@ interface User {
   email: string;
   avatar?: string;
   theme?: 'light' | 'dark';
+  storageUsed: string;
+  storageQuota: string;
 }
 
 const useAuth = () => {
