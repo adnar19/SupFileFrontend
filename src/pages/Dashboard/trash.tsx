@@ -10,6 +10,7 @@ import { restoreFolder } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
+import Breadcrumbs from '../../components/Breadcrumbs';
 
 interface TrashItem {
   id: string;
@@ -175,14 +176,13 @@ const Trash: React.FC = () => {
   return (
     <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Header */}
-      <div className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-[var(--bg-primary)]">
-        <div className="flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-          <Link to="/dashboard" className="hover:text-[var(--text-primary)] transition-colors">
-            <Home className="w-4 h-4" />
-          </Link>
-          <ChevronRight className="w-4 h-4" />
-          <span className="font-semibold text-[var(--text-primary)]">Trash</span>
-        </div>
+      <div className="sticky top-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 bg-[var(--bg-primary)] space-y-4 sm:space-y-0">
+        <Breadcrumbs 
+          items={[]} 
+          onHomeClick={() => {}}
+          onItemClick={() => {}}
+          currentPageName="Trash"
+        />
 
         <div className="flex items-center space-x-3">
           <button

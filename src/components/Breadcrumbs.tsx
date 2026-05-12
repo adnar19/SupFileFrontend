@@ -20,7 +20,7 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   currentPageName 
 }) => {
   return (
-    <div className="flex items-center space-x-2 text-sm text-[var(--text-tertiary)] mb-6 overflow-x-auto whitespace-nowrap pb-2">
+    <div className="flex items-center space-x-2 text-sm text-[var(--text-tertiary)] overflow-x-auto whitespace-nowrap pb-2">
       <button 
         onClick={onHomeClick}
         className="flex items-center hover:text-blue-500 transition-colors"

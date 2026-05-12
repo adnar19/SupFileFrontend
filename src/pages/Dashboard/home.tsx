@@ -233,24 +233,20 @@ const Dashboard: React.FC = () => {
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
-        <h1 className="text-3xl font-bold text-[var(--text-primary)] tracking-tight">
-          My Files
-        </h1>
+        <Breadcrumbs 
+          items={breadcrumbs} 
+          onHomeClick={() => {
+            setCurrentFolderId(undefined);
+            setCurrentFolderName(undefined);
+            setPagination(prev => ({ ...prev, currentPage: 1 }));
+          }}
+          onItemClick={(id) => {
+            setCurrentFolderId(id);
+          }}
+          currentPageName={!currentFolderId ? "My Files" : undefined}
+        />
         <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
-
-      <Breadcrumbs 
-        items={breadcrumbs} 
-        onHomeClick={() => {
-          setCurrentFolderId(undefined);
-          setCurrentFolderName(undefined);
-          setPagination(prev => ({ ...prev, currentPage: 1 }));
-        }}
-        onItemClick={(id) => {
-          setCurrentFolderId(id);
-          setPagination(prev => ({ ...prev, currentPage: 1 }));
-        }}
-      />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-32 space-y-4">
