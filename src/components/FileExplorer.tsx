@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   MoreVertical, Download, Star, Trash2, Edit2, Eye, Share2, 
-  AlertTriangle 
+  AlertTriangle, FolderInput 
 } from 'lucide-react';
 
 export interface FileItem {
@@ -25,6 +25,7 @@ interface FileExplorerProps {
   onDownload: (id: string, name: string) => void;
   onRename: (id: string, name: string, type: 'file' | 'folder') => void;
   onDelete: (id: string, name: string, type: 'file' | 'folder') => void;
+  onMove?: (id: string, name: string, type: 'file' | 'folder') => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
@@ -36,8 +37,21 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onFavoriteToggle,
   onDownload,
   onRename,
-  onDelete
+  onDelete,
+  onMove
 }) => {
+  const [menuRect, setMenuRect] = React.useState<{ top: number, right: number } | null>(null);
+
+  React.useEffect(() => {
+    const handleClose = () => setActiveMenuId(null);
+    window.addEventListener('scroll', handleClose, true);
+    window.addEventListener('click', handleClose);
+    return () => {
+      window.removeEventListener('scroll', handleClose, true);
+      window.removeEventListener('click', handleClose);
+    };
+  }, [setActiveMenuId]);
+
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center p-12 bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
@@ -52,8 +66,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
   if (viewMode === 'list') {
     return (
-      <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] overflow-hidden shadow-sm">
-        <table className="w-full text-left border-collapse">
+      <div className="bg-[var(--bg-secondary)] rounded-2xl border border-[var(--border-color)] shadow-sm">
+        <div className="overflow-x-auto rounded-2xl">
+          <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/50">
               <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Name</th>
@@ -91,7 +106,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                 <td className="px-6 py-4">
                   <span className="text-sm text-[var(--text-tertiary)] font-mono">{item.size}</span>
                 </td>
-                <td className="px-6 py-4 text-right relative">
+                <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end space-x-2">
                     <button 
                       onClick={(e) => {
@@ -108,8 +123,14 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     </button>
                     <div className="relative">
                       <button 
+                        data-menu-id={item.id}
                         onClick={(e) => {
                           e.stopPropagation();
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setMenuRect({ 
+                            top: rect.bottom, 
+                            right: window.innerWidth - rect.right 
+                          });
                           setActiveMenuId(activeMenuId === item.id ? null : item.id);
                         }}
                         className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] rounded-lg transition-all"
@@ -117,8 +138,15 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                         <MoreVertical className="w-4.5 h-4.5" />
                       </button>
                       
-                      {activeMenuId === item.id && (
-                        <div className="absolute right-0 mt-2 w-52 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-40 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {activeMenuId === item.id && menuRect && (
+                        <div 
+                          className="fixed mt-2 w-52 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[9999] py-2 animate-in fade-in slide-in-from-top-2 duration-200"
+                          style={{
+                            top: menuRect.top + 350 > window.innerHeight ? 'auto' : menuRect.top,
+                            bottom: menuRect.top + 350 > window.innerHeight ? window.innerHeight - menuRect.top + 40 : 'auto',
+                            right: menuRect.right
+                          }}
+                        >
                           {item.type === 'file' && (
                             <button 
                               onClick={(e) => {
@@ -126,10 +154,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                 onItemClick(item);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                             >
-                              <Eye className="w-4 h-4" />
-                              <span>Preview</span>
+                              <Eye className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                              <span className="font-medium">Preview</span>
                             </button>
                           )}
                           <button 
@@ -138,11 +166,24 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                               onRename(item.id, item.name, item.type);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                           >
-                            <Edit2 className="w-4 h-4" />
-                            <span>Rename</span>
+                            <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                            <span className="font-medium">Rename</span>
                           </button>
+                          {onMove && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onMove(item.id, item.name, item.type);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                            >
+                              <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                              <span className="font-medium">Move</span>
+                            </button>
+                          )}
                           {item.type === 'file' && (
                             <button 
                               onClick={(e) => {
@@ -150,28 +191,28 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                 onDownload(item.id, item.name);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                             >
-                              <Download className="w-4 h-4" />
-                              <span>Download</span>
+                              <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                              <span className="font-medium">Download</span>
                             </button>
                           )}
                           <button 
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                           >
-                            <Share2 className="w-4 h-4" />
-                            <span>Share</span>
+                            <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                            <span className="font-medium">Share</span>
                           </button>
-                          <div className="my-1 border-t border-[var(--border-color)]"></div>
+                          <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               onDelete(item.id, item.name, item.type);
                               setActiveMenuId(null);
                             }}
-                            className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors font-medium"
+                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
                             <span>Delete</span>
                           </button>
                         </div>
@@ -184,6 +225,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           </tbody>
         </table>
       </div>
+    </div>
     );
   }
 
@@ -236,7 +278,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           </div>
 
           {activeMenuId === item.id && (
-            <div className="absolute top-12 right-4 w-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-50 py-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute top-12 right-4 w-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] py-2 animate-in fade-in slide-in-from-top-2 duration-200">
               {item.type === 'file' && (
                 <button 
                   onClick={(e) => {
@@ -244,10 +286,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     onItemClick(item);
                     setActiveMenuId(null);
                   }}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all"
                 >
-                  <Eye className="w-4 h-4" />
-                  <span>Preview</span>
+                  <Eye className="w-4 h-4 opacity-70" />
+                  <span className="font-medium">Preview</span>
                 </button>
               )}
               <button 
@@ -256,11 +298,24 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                   onRename(item.id, item.name, item.type);
                   setActiveMenuId(null);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
               >
-                <Edit2 className="w-4 h-4" />
-                <span>Rename</span>
+                <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                <span className="font-medium">Rename</span>
               </button>
+              {onMove && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onMove(item.id, item.name, item.type);
+                    setActiveMenuId(null);
+                  }}
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                >
+                  <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                  <span className="font-medium">Move</span>
+                </button>
+              )}
               {item.type === 'file' && (
                 <button 
                   onClick={(e) => {
@@ -268,28 +323,28 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     onDownload(item.id, item.name);
                     setActiveMenuId(null);
                   }}
-                  className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                 >
-                  <Download className="w-4 h-4" />
-                  <span>Download</span>
+                  <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                  <span className="font-medium">Download</span>
                 </button>
               )}
               <button 
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors"
+                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
               >
-                <Share2 className="w-4 h-4" />
-                <span>Share</span>
+                <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                <span className="font-medium">Share</span>
               </button>
-              <div className="my-1 border-t border-[var(--border-color)]"></div>
+              <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete(item.id, item.name, item.type);
                   setActiveMenuId(null);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/10 transition-colors font-medium"
+                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
                 <span>Delete</span>
               </button>
             </div>

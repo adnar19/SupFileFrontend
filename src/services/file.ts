@@ -175,3 +175,18 @@ export const renameFileApi = async (id: string, name: string) => {
     throw error;
   }
 };
+
+export const moveFileApi = async (id: string, parentId: string | null) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/files/${id}/move`, { parentId }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error moving file:", error);
+    throw error;
+  }
+};

@@ -11,6 +11,8 @@ import { useFileSystem } from '../../contexts/FileSystemContext';
 import ViewToggle from '../../components/ViewToggle';
 import FileExplorer, { type FileItem } from '../../components/FileExplorer';
 import Breadcrumbs from '../../components/Breadcrumbs';
+import MoveModal from '../../components/MoveModal';
+import { moveFileApi } from '../../services/file';
 
 const Favorites: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
@@ -36,6 +38,10 @@ const Favorites: React.FC = () => {
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [itemToMove, setItemToMove] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
 
   const fetchData = async (page: number = 1) => {
     try {
@@ -169,6 +175,26 @@ const Favorites: React.FC = () => {
     }
   };
 
+  const handleMoveClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToMove({ id, name, type });
+    setIsMoveModalOpen(true);
+  };
+
+  const confirmMove = async (targetFolderId: string | null) => {
+    if (!itemToMove) return;
+    try {
+      setIsMoving(true);
+      await moveFileApi(itemToMove.id, targetFolderId);
+      toast.success("Moved successfully");
+      fetchData(pagination.currentPage);
+      setIsMoveModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to move");
+    } finally {
+      setIsMoving(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-screen">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
@@ -201,6 +227,7 @@ const Favorites: React.FC = () => {
           onDownload={handleDownload}
           onRename={handleRenameClick}
           onDelete={handleDeleteClick}
+          onMove={handleMoveClick}
         />
       )}
 
@@ -272,6 +299,14 @@ const Favorites: React.FC = () => {
       </Modal>
 
       <PreviewModal isOpen={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} file={itemToPreview} />
+
+      <MoveModal 
+        isOpen={isMoveModalOpen} 
+        onClose={() => setIsMoveModalOpen(false)} 
+        onConfirm={confirmMove}
+        itemName={itemToMove?.name || ""}
+        isMoving={isMoving}
+      />
     </div>
   );
 };
