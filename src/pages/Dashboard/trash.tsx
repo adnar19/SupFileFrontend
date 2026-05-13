@@ -5,7 +5,7 @@ import {
   RotateCcw, Image as ImageIcon, FileText, Music, Video, Archive, 
   Presentation, Table, AlertTriangle, MoreVertical, ChevronLeft 
 } from 'lucide-react';
-import { getTrash, restoreFile, deleteFilePermanently } from '../../services/file';
+import { getTrash, restoreFile, deleteFilePermanently, emptyTrashApi } from '../../services/file';
 import { restoreFolder, deleteFolderPermanentlyApi } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
@@ -40,6 +40,10 @@ const Trash: React.FC = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Empty Trash modal
+  const [isEmptyTrashModalOpen, setIsEmptyTrashModalOpen] = useState(false);
+  const [isEmptyingTrash, setIsEmptyingTrash] = useState(false);
 
   const getIcon = (type: string, name: string) => {
     if (type === 'folder') return <Folder className="w-5 h-5 text-slate-400" />;
@@ -174,6 +178,20 @@ const Trash: React.FC = () => {
     }
   };
 
+  const handleEmptyTrash = async () => {
+    try {
+      setIsEmptyingTrash(true);
+      await emptyTrashApi();
+      toast.success("Trash emptied successfully");
+      setIsEmptyTrashModalOpen(false);
+      fetchTrash();
+    } catch {
+      toast.error("Failed to empty trash");
+    } finally {
+      setIsEmptyingTrash(false);
+    }
+  };
+
   return (
     <div className="min-h-full flex flex-col" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       {/* Header */}
@@ -187,9 +205,10 @@ const Trash: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <button
-            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-red-500/10 hover:text-red-500"
+            className="flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}
-            onClick={() => toast.info("Empty Trash feature coming soon")}
+            onClick={() => setIsEmptyTrashModalOpen(true)}
+            disabled={items.length === 0}
           >
             <Trash2 className="w-4 h-4" />
             <span>Empty Trash</span>
@@ -429,6 +448,45 @@ const Trash: React.FC = () => {
               className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
             >
               {isDeleting ? "Deleting..." : "Delete Permanently"}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Empty Trash Confirmation Modal */}
+      <Modal
+        isOpen={isEmptyTrashModalOpen}
+        onClose={() => !isEmptyingTrash && setIsEmptyTrashModalOpen(false)}
+        title="Empty Trash"
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+            <p className="text-sm font-semibold text-red-500">
+              Warning: This action is irreversible!
+            </p>
+          </div>
+
+          <p className="text-sm" style={{ color: "var(--text-primary)" }}>
+            Are you sure you want to permanently delete <span className="font-bold">all {items.length} item{items.length !== 1 ? 's' : ''}</span> in the trash? This cannot be undone.
+          </p>
+
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={isEmptyingTrash}
+              onClick={() => setIsEmptyTrashModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleEmptyTrash}
+              disabled={isEmptyingTrash}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              {isEmptyingTrash ? "Emptying..." : "Empty Trash"}
             </button>
           </div>
         </div>

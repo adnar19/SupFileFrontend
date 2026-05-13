@@ -85,6 +85,21 @@ export const restoreFile = async (id: string) => {
   }
 };
 
+export const emptyTrashApi = async () => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/files/trash/empty`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error emptying trash:", error);
+    throw error;
+  }
+};
+
 export const deleteFilePermanently = async (id: string) => {
   try {
     const token = Cookies.get("token");
