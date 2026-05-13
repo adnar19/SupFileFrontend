@@ -95,3 +95,17 @@ export const moveFolderApi = async (id: string, parentId: string | null) => {
     throw error;
   }
 };
+export const deleteFolderPermanentlyApi = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/folders/${id}/permanent`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting folder permanently:", error);
+    throw error;
+  }
+};

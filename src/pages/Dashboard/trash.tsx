@@ -6,7 +6,7 @@ import {
   Presentation, Table, AlertTriangle, MoreVertical, ChevronLeft 
 } from 'lucide-react';
 import { getTrash, restoreFile, deleteFilePermanently } from '../../services/file';
-import { restoreFolder } from '../../services/folder';
+import { restoreFolder, deleteFolderPermanentlyApi } from '../../services/folder';
 import { SyncLoader } from 'react-spinners';
 import { toast } from 'react-toastify';
 import Modal from '../../components/Modal';
@@ -161,7 +161,8 @@ const Trash: React.FC = () => {
         await deleteFilePermanently(itemToDelete.id);
         toast.success("File deleted permanently");
       } else {
-        toast.info("Individual folder permanent delete coming soon. Use 'Empty Trash' for now.");
+        await deleteFolderPermanentlyApi(itemToDelete.id);
+        toast.success("Folder and its content deleted permanently");
       }
       fetchTrash();
       setIsDeleteModalOpen(false);
