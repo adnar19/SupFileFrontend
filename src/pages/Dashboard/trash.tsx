@@ -168,6 +168,7 @@ const Trash: React.FC = () => {
         await deleteFolderPermanentlyApi(itemToDelete.id);
         toast.success("Folder and its content deleted permanently");
       }
+      window.dispatchEvent(new Event('storage-updated'));
       fetchTrash();
       setIsDeleteModalOpen(false);
     } catch (error) {
@@ -183,6 +184,7 @@ const Trash: React.FC = () => {
       setIsEmptyingTrash(true);
       await emptyTrashApi();
       toast.success("Trash emptied successfully");
+      window.dispatchEvent(new Event('storage-updated'));
       setIsEmptyTrashModalOpen(false);
       fetchTrash();
     } catch {

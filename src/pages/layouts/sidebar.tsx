@@ -1,15 +1,23 @@
 import { HardDrive, File, Clock, Star, Trash2 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useEffect } from "react";
 import useAuth from "../../hooks/useAuth";
 import { formatFileSize } from "../../utils/fileUtils";
 
 const Sidebar: React.FC = () => {
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   
   const storageUsed = user?.storageUsed ? parseInt(user.storageUsed) : 0;
-  const storageTotal = user?.storageQuota ? parseInt(user.storageQuota) : 1; // Avoid division by zero
+  const storageTotal = user?.storageQuota ? parseInt(user.storageQuota) : 1;
   const storagePercent = Math.min((storageUsed / storageTotal) * 100, 100);
+
+  useEffect(() => {
+    const handleStorageUpdate = () => refreshUser();
+    window.addEventListener('storage-updated', handleStorageUpdate);
+    return () => window.removeEventListener('storage-updated', handleStorageUpdate);
+  }, []);
+
   const sidebarItems = [
     {
       icon: <HardDrive className="w-5 h-5" />,
