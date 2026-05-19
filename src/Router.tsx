@@ -13,6 +13,7 @@ import Trash from "./pages/Dashboard/trash";
 import AccountSettings from "./pages/Auth/account_settings";
 import VerifyEmail from "./pages/Auth/verify-email";
 import ForgotPasswordPage from "./pages/Auth/forgot-password";
+import PublicShare from "./pages/PublicShare";
 
 const AppRouter: React.FC = () => {
   return (
@@ -31,6 +32,7 @@ const AppRouter: React.FC = () => {
           <Route path="/trash" element={<Trash />} />
           <Route path="/account-settings" element={<AccountSettings />} />
         </Route>
+        <Route path="/share/:token" element={<PublicShare />} />
         {/* this one is used if url doesn't exist */}
         <Route path="*" element={<NotFoundPage />} />
         <Route path="/home" element={<HomePage />} />

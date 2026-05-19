@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { 
-  Grid3X3, List, Home, Trash2, File, Folder, ChevronRight, 
+  Grid3X3, List, Trash2, File, Folder, ChevronRight, 
   RotateCcw, Image as ImageIcon, FileText, Music, Video, Archive, 
   Presentation, Table, AlertTriangle, MoreVertical, ChevronLeft 
 } from 'lucide-react';

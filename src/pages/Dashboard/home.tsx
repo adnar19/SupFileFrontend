@@ -12,6 +12,7 @@ import Breadcrumbs from '../../components/Breadcrumbs';
 import ViewToggle from '../../components/ViewToggle';
 import FileExplorer, { type FileItem } from '../../components/FileExplorer';
 import MoveModal from '../../components/MoveModal';
+import ShareModal from '../../components/ShareModal';
 import { moveFileApi } from '../../services/file';
 
 const Dashboard: React.FC = () => {
@@ -43,6 +44,14 @@ const Dashboard: React.FC = () => {
   const [isMoving, setIsMoving] = useState(false);
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [itemToShare, setItemToShare] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
+  const handleShareClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToShare({ id, name, type });
+    setIsShareModalOpen(true);
+  };
 
   const {
     currentFolderId, setCurrentFolderId,
@@ -265,6 +274,7 @@ const Dashboard: React.FC = () => {
           onRename={handleRenameClick}
           onDelete={handleDeleteClick}
           onMove={handleMoveClick}
+          onShare={handleShareClick}
         />
       )}
 
@@ -344,6 +354,16 @@ const Dashboard: React.FC = () => {
         itemName={itemToMove?.name || ""}
         isMoving={isMoving}
       />
+
+      {itemToShare && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          itemId={itemToShare.id}
+          itemName={itemToShare.name}
+          itemType={itemToShare.type}
+        />
+      )}
     </div>
   );
 };

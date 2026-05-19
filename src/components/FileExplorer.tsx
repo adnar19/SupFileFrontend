@@ -26,6 +26,7 @@ interface FileExplorerProps {
   onRename: (id: string, name: string, type: 'file' | 'folder') => void;
   onDelete: (id: string, name: string, type: 'file' | 'folder') => void;
   onMove?: (id: string, name: string, type: 'file' | 'folder') => void;
+  onShare?: (id: string, name: string, type: 'file' | 'folder') => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
@@ -38,7 +39,8 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onDownload,
   onRename,
   onDelete,
-  onMove
+  onMove,
+  onShare
 }) => {
   const [menuRect, setMenuRect] = React.useState<{ top: number, right: number } | null>(null);
 
@@ -196,6 +198,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                             </button>
                           )}
                           <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onShare?.(item.id, item.name, item.type);
+                              setActiveMenuId(null);
+                            }}
                             className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
                           >
                             <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
@@ -326,6 +333,11 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                 </button>
               )}
               <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onShare?.(item.id, item.name, item.type);
+                  setActiveMenuId(null);
+                }}
                 className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
               >
                 <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />

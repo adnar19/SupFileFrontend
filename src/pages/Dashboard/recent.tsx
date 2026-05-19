@@ -11,6 +11,7 @@ import ViewToggle from '../../components/ViewToggle';
 import FileExplorer, { type FileItem } from '../../components/FileExplorer';
 import Breadcrumbs from '../../components/Breadcrumbs';
 import MoveModal from '../../components/MoveModal';
+import ShareModal from '../../components/ShareModal';
 import { moveFileApi } from '../../services/file';
 
 const Recent: React.FC = () => {
@@ -35,6 +36,14 @@ const Recent: React.FC = () => {
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [itemToMove, setItemToMove] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [isMoving, setIsMoving] = useState(false);
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [itemToShare, setItemToShare] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
+  const handleShareClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToShare({ id, name, type });
+    setIsShareModalOpen(true);
+  };
 
   const fetchData = async () => {
     try {
@@ -205,6 +214,7 @@ const Recent: React.FC = () => {
           onRename={handleRenameClick}
           onDelete={handleDeleteClick}
           onMove={handleMoveClick}
+          onShare={handleShareClick}
         />
       )}
 
@@ -250,6 +260,16 @@ const Recent: React.FC = () => {
         itemName={itemToMove?.name || ""}
         isMoving={isMoving}
       />
+
+      {itemToShare && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          itemId={itemToShare.id}
+          itemName={itemToShare.name}
+          itemType={itemToShare.type}
+        />
+      )}
     </div>
   );
 };
