@@ -43,6 +43,7 @@ export const getCustomFileType = (mimeType: string, name: string) => {
   const extension = name.split('.').pop()?.toLowerCase();
   let customType = mimeType?.split('/')[1]?.toUpperCase() || 'File';
   
+  if (['doc', 'docx'].includes(extension || '')) customType = 'Word';
   if (['ppt', 'pptx'].includes(extension || '')) customType = 'PowerPoint';
   if (['xls', 'xlsx'].includes(extension || '')) customType = 'Excel';
   if (extension === 'pdf') customType = 'PDF';

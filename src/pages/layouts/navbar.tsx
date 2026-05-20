@@ -195,7 +195,7 @@ const Navbar: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold">
-            {currentFolderName || getPageTitle(location.pathname)}
+          {(location.pathname === '/my-drive' && currentFolderName) ? currentFolderName : getPageTitle(location.pathname)}
           </h1>
         </div>
 
