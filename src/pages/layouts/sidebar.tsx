@@ -1,4 +1,4 @@
-import { HardDrive, File, Clock, Star, Trash2 } from "lucide-react";
+import { HardDrive, File, Star, Trash2, LayoutDashboard } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import useAuth from "../../hooks/useAuth";
@@ -10,7 +10,6 @@ const Sidebar: React.FC = () => {
   
   const storageUsed = user?.storageUsed ? parseInt(user.storageUsed) : 0;
   const storageTotal = user?.storageQuota ? parseInt(user.storageQuota) : 1;
-  const storagePercent = Math.min((storageUsed / storageTotal) * 100, 100);
 
   useEffect(() => {
     const handleStorageUpdate = () => refreshUser();
@@ -20,19 +19,19 @@ const Sidebar: React.FC = () => {
 
   const sidebarItems = [
     {
+      icon: <LayoutDashboard className="w-5 h-5" />,
+      label: "Dashboard",
+      path: "/dashboard",
+    },
+    {
       icon: <HardDrive className="w-5 h-5" />,
       label: "My Drive",
-      path: "/dashboard",
+      path: "/my-drive",
     },
     {
       icon: <File className="w-5 h-5" />,
       label: "All Files",
       path: "/all-files",
-    },
-    {
-      icon: <Clock className="w-5 h-5" />,
-      label: "Recent",
-      path: "/recent",
     },
     {
       icon: <Star className="w-5 h-5" />,
@@ -90,7 +89,7 @@ const Sidebar: React.FC = () => {
 
         {/* Storage Indicator */}
         <div
-          className="rounded-lg p-4 border"
+          className="rounded-2xl p-4 border"
           style={{
             backgroundColor: "var(--card-bg)",
             borderColor: "var(--border-color)",
@@ -117,13 +116,15 @@ const Sidebar: React.FC = () => {
               <span>{formatFileSize(storageTotal)} total</span>
             </div>
             <div
-              className="w-full rounded-full h-2"
+              className="w-full rounded-full h-2 overflow-hidden shadow-inner flex"
               style={{ backgroundColor: "var(--bg-tertiary)" }}
             >
-              <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-                style={{ width: `${storagePercent}%` }}
-              />
+                <div
+                  className="bg-blue-500 h-full transition-all duration-1000 ease-out"
+                  style={{ 
+                    width: `${storageUsed > 0 ? Math.max((storageUsed / storageTotal) * 100, 0.5) : 0}%` 
+                  }}
+                />
             </div>
           </div>
         </div>

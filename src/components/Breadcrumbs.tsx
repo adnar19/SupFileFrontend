@@ -28,27 +28,25 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
         <Home className="w-4 h-4" />
       </button>
 
-      {currentPageName && (
-        <>
-          <ChevronRight className="w-4 h-4 opacity-30" />
-          <span className="font-medium text-[var(--text-secondary)]">{currentPageName}</span>
-        </>
-      )}
-
-      {items.length > 0 && items.map((item, index) => (
+      {items.length > 0 && items.map((item) => (
         <React.Fragment key={item.id}>
           <ChevronRight className="w-4 h-4 opacity-30" />
           <button
             onClick={() => onItemClick(item.id)}
-            className={`flex items-center hover:text-blue-500 transition-colors ${
-              index === items.length - 1 ? 'font-medium text-[var(--text-secondary)]' : ''
-            }`}
+            className="flex items-center hover:text-blue-500 transition-colors"
           >
             <Folder className="w-3.5 h-3.5 mr-1.5 opacity-60" />
             <span>{item.name}</span>
           </button>
         </React.Fragment>
       ))}
+
+      {currentPageName && (
+        <>
+          <ChevronRight className="w-4 h-4 opacity-30" />
+          <span className="font-medium text-[var(--text-secondary)]">{currentPageName}</span>
+        </>
+      )}
     </div>
   );
 };

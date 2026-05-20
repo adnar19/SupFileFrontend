@@ -15,7 +15,7 @@ import MoveModal from '../../components/MoveModal';
 import ShareModal from '../../components/ShareModal';
 import { moveFileApi } from '../../services/file';
 
-const Dashboard: React.FC = () => {
+const MyDrive: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +55,7 @@ const Dashboard: React.FC = () => {
 
   const {
     currentFolderId, setCurrentFolderId,
-    setCurrentFolderName,
+    currentFolderName, setCurrentFolderName,
     refreshTrigger, triggerRefresh
   } = useFileSystem();
 
@@ -81,7 +81,7 @@ const Dashboard: React.FC = () => {
           modified: new Date(f.updatedAt).toLocaleDateString(),
           size: '--',
           icon: getFileIcon('folder', f.name),
-          isFavorite: f.favorites?.length > 0
+          isFavorite: f.isFavorite || false
         }));
 
         const fileItems: FileItem[] = files.map((f: any) => ({
@@ -92,11 +92,13 @@ const Dashboard: React.FC = () => {
           modified: new Date(f.createdAt).toLocaleDateString(),
           size: formatFileSize(f.size),
           icon: getFileIcon('file', f.name),
-          isFavorite: f.favorites?.length > 0
+          isFavorite: f.isFavorite || false
         }));
 
         setItems([...folderItems, ...fileItems]);
-        setBreadcrumbs(bc || []);
+        // Filter out the current folder from the breadcrumbs items (since it will be shown via currentPageName)
+        const currentId = currentFolder?.id;
+        setBreadcrumbs((bc || []).filter((item: any) => item.id !== currentId));
         if (res.pagination) setPagination(res.pagination);
       }
     } catch (error) {
@@ -252,7 +254,7 @@ const Dashboard: React.FC = () => {
           onItemClick={(id) => {
             setCurrentFolderId(id);
           }}
-          currentPageName={!currentFolderId ? "My Files" : undefined}
+          currentPageName={currentFolderName || "My Files"}
         />
         <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>
@@ -368,4 +370,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard;
+export default MyDrive;
