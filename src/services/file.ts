@@ -205,3 +205,19 @@ export const moveFileApi = async (id: string, parentId: string | null) => {
     throw error;
   }
 };
+
+export const searchFilesAndFolders = async (query: string, limit: number = 5) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/dashboard/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error searching files and folders:", error);
+    throw error;
+  }
+};
+
