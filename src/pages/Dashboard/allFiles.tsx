@@ -65,7 +65,7 @@ const AllFiles: React.FC = () => {
           modified: new Date(f.updatedAt).toLocaleDateString(),
           size: formatFileSize(f.size),
           icon: getFileIcon('file', f.name),
-          isFavorite: f.isFavorited || false
+          isFavorite: f.isFavorite || false
         }));
 
         setItems(fileItems);

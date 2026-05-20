@@ -121,7 +121,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                           : 'text-[var(--text-tertiary)] hover:text-yellow-500 hover:bg-yellow-500/10'
                       }`}
                     >
-                      <Star className={`w-4 h-4 ${item.isFavorite ? 'fill-yellow-500' : ''}`} />
+                      <Star 
+                        className="w-4 h-4" 
+                        fill={item.isFavorite ? "currentColor" : "none"} 
+                      />
                     </button>
                     <div className="relative">
                       <button 
@@ -255,7 +258,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                   : 'bg-white/90 text-slate-600 hover:text-yellow-500'
               }`}
             >
-              <Star className={`w-3.5 h-3.5 ${item.isFavorite ? 'fill-white' : ''}`} />
+              <Star 
+                className="w-3.5 h-3.5" 
+                fill={item.isFavorite ? "currentColor" : "none"}
+              />
             </button>
             <button 
               onClick={(e) => {
