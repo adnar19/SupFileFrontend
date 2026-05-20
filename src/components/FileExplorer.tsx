@@ -1,7 +1,7 @@
 import React from 'react';
 import { 
   MoreVertical, Download, Star, Trash2, Edit2, Eye, Share2, 
-  AlertTriangle, FolderInput 
+  AlertTriangle, FolderInput, RotateCcw 
 } from 'lucide-react';
 
 export interface FileItem {
@@ -27,6 +27,10 @@ interface FileExplorerProps {
   onDelete: (id: string, name: string, type: 'file' | 'folder') => void;
   onMove?: (id: string, name: string, type: 'file' | 'folder') => void;
   onShare?: (id: string, name: string, type: 'file' | 'folder') => void;
+  // Trash mode
+  trashMode?: boolean;
+  onRestore?: (id: string, type: 'file' | 'folder') => void;
+  onPermanentDelete?: (id: string, name: string, type: 'file' | 'folder') => void;
 }
 
 const FileExplorer: React.FC<FileExplorerProps> = ({
@@ -40,7 +44,10 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
   onRename,
   onDelete,
   onMove,
-  onShare
+  onShare,
+  trashMode = false,
+  onRestore,
+  onPermanentDelete,
 }) => {
   const [menuRect, setMenuRect] = React.useState<{ top: number, right: number } | null>(null);
 
@@ -110,22 +117,24 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                 </td>
                 <td className="px-6 py-4 text-right">
                   <div className="flex items-center justify-end space-x-2">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onFavoriteToggle(item.id, item.type);
-                      }}
-                      className={`p-1.5 rounded-lg transition-all ${
-                        item.isFavorite 
-                          ? 'text-yellow-500 bg-yellow-500/10' 
-                          : 'text-[var(--text-tertiary)] hover:text-yellow-500 hover:bg-yellow-500/10'
-                      }`}
-                    >
-                      <Star 
-                        className="w-4 h-4" 
-                        fill={item.isFavorite ? "currentColor" : "none"} 
-                      />
-                    </button>
+                    {!trashMode && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFavoriteToggle(item.id, item.type);
+                        }}
+                        className={`p-1.5 rounded-lg transition-all ${
+                          item.isFavorite 
+                            ? 'text-yellow-500 bg-yellow-500/10' 
+                            : 'text-[var(--text-tertiary)] hover:text-yellow-500 hover:bg-yellow-500/10'
+                        }`}
+                      >
+                        <Star 
+                          className="w-4 h-4" 
+                          fill={item.isFavorite ? "currentColor" : "none"} 
+                        />
+                      </button>
+                    )}
                     <div className="relative">
                       <button 
                         data-menu-id={item.id}
@@ -152,77 +161,107 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                             right: menuRect.right
                           }}
                         >
-                          {item.type === 'file' && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onItemClick(item);
-                                setActiveMenuId(null);
-                              }}
-                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                            >
-                              <Eye className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                              <span className="font-medium">Preview</span>
-                            </button>
+                          {trashMode ? (
+                            <>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRestore?.(item.id, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-green-500/10 hover:text-green-500 transition-all group/item border-l-2 border-transparent hover:border-green-500"
+                              >
+                                <RotateCcw className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                <span className="font-medium">Restore</span>
+                              </button>
+                              <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onPermanentDelete?.(item.id, item.name, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
+                              >
+                                <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
+                                <span>Delete Permanently</span>
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {item.type === 'file' && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onItemClick(item);
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                                >
+                                  <Eye className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                  <span className="font-medium">Preview</span>
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onRename(item.id, item.name, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                              >
+                                <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                <span className="font-medium">Rename</span>
+                              </button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onMove?.(item.id, item.name, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                              >
+                                <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                <span className="font-medium">Move</span>
+                              </button>
+                              {item.type === 'file' && (
+                                <button 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDownload(item.id, item.name);
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                                >
+                                  <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                  <span className="font-medium">Download</span>
+                                </button>
+                              )}
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onShare?.(item.id, item.name, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                              >
+                                <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                                <span className="font-medium">Share</span>
+                              </button>
+                              <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDelete(item.id, item.name, item.type);
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
+                              >
+                                <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
+                                <span>Delete</span>
+                              </button>
+                            </>
                           )}
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onRename(item.id, item.name, item.type);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                          >
-                            <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                            <span className="font-medium">Rename</span>
-                          </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onMove?.(item.id, item.name, item.type);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                          >
-                            <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                            <span className="font-medium">Move</span>
-                          </button>
-                          {item.type === 'file' && (
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onDownload(item.id, item.name);
-                                setActiveMenuId(null);
-                              }}
-                              className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                            >
-                              <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                              <span className="font-medium">Download</span>
-                            </button>
-                          )}
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onShare?.(item.id, item.name, item.type);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                          >
-                            <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                            <span className="font-medium">Share</span>
-                          </button>
-                          <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete(item.id, item.name, item.type);
-                              setActiveMenuId(null);
-                            }}
-                            className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
-                          >
-                            <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
-                            <span>Delete</span>
-                          </button>
                         </div>
                       )}
                     </div>
@@ -247,22 +286,24 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
           onClick={() => onItemClick(item)}
         >
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col space-y-1">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                onFavoriteToggle(item.id, item.type);
-              }}
-              className={`p-1.5 rounded-lg backdrop-blur-md transition-all shadow-lg ${
-                item.isFavorite 
-                  ? 'bg-yellow-500 text-white' 
-                  : 'bg-white/90 text-slate-600 hover:text-yellow-500'
-              }`}
-            >
-              <Star 
-                className="w-3.5 h-3.5" 
-                fill={item.isFavorite ? "currentColor" : "none"}
-              />
-            </button>
+            {!trashMode && (
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onFavoriteToggle(item.id, item.type);
+                }}
+                className={`p-1.5 rounded-lg backdrop-blur-md transition-all shadow-lg ${
+                  item.isFavorite 
+                    ? 'bg-yellow-500 text-white' 
+                    : 'bg-white/90 text-slate-600 hover:text-yellow-500'
+                }`}
+              >
+                <Star 
+                  className="w-3.5 h-3.5" 
+                  fill={item.isFavorite ? "currentColor" : "none"}
+                />
+              </button>
+            )}
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -290,77 +331,107 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
 
           {activeMenuId === item.id && (
             <div className="absolute top-12 right-4 w-48 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-xl shadow-2xl z-[100] py-2 animate-in fade-in slide-in-from-top-2 duration-200">
-              {item.type === 'file' && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onItemClick(item);
-                    setActiveMenuId(null);
-                  }}
-                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all"
-                >
-                  <Eye className="w-4 h-4 opacity-70" />
-                  <span className="font-medium">Preview</span>
-                </button>
+              {trashMode ? (
+                <>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRestore?.(item.id, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-green-500/10 hover:text-green-500 transition-all group/item border-l-2 border-transparent hover:border-green-500"
+                  >
+                    <RotateCcw className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                    <span className="font-medium">Restore</span>
+                  </button>
+                  <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPermanentDelete?.(item.id, item.name, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
+                  >
+                    <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
+                    <span>Delete Permanently</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  {item.type === 'file' && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onItemClick(item);
+                        setActiveMenuId(null);
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-all"
+                    >
+                      <Eye className="w-4 h-4 opacity-70" />
+                      <span className="font-medium">Preview</span>
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRename(item.id, item.name, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                  >
+                    <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                    <span className="font-medium">Rename</span>
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onMove?.(item.id, item.name, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                  >
+                    <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                    <span className="font-medium">Move</span>
+                  </button>
+                  {item.type === 'file' && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDownload(item.id, item.name);
+                        setActiveMenuId(null);
+                      }}
+                      className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                    >
+                      <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                      <span className="font-medium">Download</span>
+                    </button>
+                  )}
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onShare?.(item.id, item.name, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
+                  >
+                    <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
+                    <span className="font-medium">Share</span>
+                  </button>
+                  <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete(item.id, item.name, item.type);
+                      setActiveMenuId(null);
+                    }}
+                    className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
+                  >
+                    <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
+                    <span>Delete</span>
+                  </button>
+                </>
               )}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onRename(item.id, item.name, item.type);
-                  setActiveMenuId(null);
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-              >
-                <Edit2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                <span className="font-medium">Rename</span>
-              </button>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onMove?.(item.id, item.name, item.type);
-                  setActiveMenuId(null);
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-              >
-                <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                <span className="font-medium">Move</span>
-              </button>
-              {item.type === 'file' && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDownload(item.id, item.name);
-                    setActiveMenuId(null);
-                  }}
-                  className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-                >
-                  <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                  <span className="font-medium">Download</span>
-                </button>
-              )}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShare?.(item.id, item.name, item.type);
-                  setActiveMenuId(null);
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-[var(--text-secondary)] hover:bg-blue-500/10 hover:text-blue-500 transition-all group/item border-l-2 border-transparent hover:border-blue-500"
-              >
-                <Share2 className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
-                <span className="font-medium">Share</span>
-              </button>
-              <div className="my-1.5 border-t border-[var(--border-color)] mx-2"></div>
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(item.id, item.name, item.type);
-                  setActiveMenuId(null);
-                }}
-                className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-500/10 transition-all group/item border-l-2 border-transparent hover:border-red-500 font-semibold"
-              >
-                <Trash2 className="w-4 h-4 group-hover/item:scale-110 transition-transform" />
-                <span>Delete</span>
-              </button>
             </div>
           )}
         </div>
