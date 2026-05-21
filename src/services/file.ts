@@ -46,7 +46,7 @@ export const downloadFile = async (id: string) => {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      responseType: 'blob'
+      responseType: "blob",
     });
     return response.data;
   } catch (error) {
@@ -58,11 +58,14 @@ export const downloadFile = async (id: string) => {
 export const getTrash = async (page: number = 1, limit: number = 10) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/files/trash?page=${page}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.get(
+      `${API_URL}/files/trash?page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching trash:", error);
@@ -73,11 +76,15 @@ export const getTrash = async (page: number = 1, limit: number = 10) => {
 export const restoreFile = async (id: string) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.put(`${API_URL}/files/${id}/restore`, {}, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.put(
+      `${API_URL}/files/${id}/restore`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error restoring file:", error);
@@ -118,11 +125,14 @@ export const deleteFilePermanently = async (id: string) => {
 export const getUserFiles = async (page: number = 1, limit: number = 20) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/files?page=${page}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.get(
+      `${API_URL}/files?page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching user files:", error);
@@ -145,14 +155,20 @@ export const getRecentFiles = async () => {
   }
 };
 
-export const getFavoriteFiles = async (page: number = 1, limit: number = 10) => {
+export const getFavoriteFiles = async (
+  page: number = 1,
+  limit: number = 10,
+) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/favorites?page=${page}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.get(
+      `${API_URL}/favorites?page=${page}&limit=${limit}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error fetching favorite files:", error);
@@ -160,10 +176,13 @@ export const getFavoriteFiles = async (page: number = 1, limit: number = 10) => 
   }
 };
 
-export const toggleFavoriteApi = async (id: string, type: 'file' | 'folder') => {
+export const toggleFavoriteApi = async (
+  id: string,
+  type: "file" | "folder",
+) => {
   try {
     const token = Cookies.get("token");
-    const payload = type === 'folder' ? { folderId: id } : { fileId: id };
+    const payload = type === "folder" ? { folderId: id } : { fileId: id };
     const response = await axios.post(`${API_URL}/favorites/toggle`, payload, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -179,11 +198,15 @@ export const toggleFavoriteApi = async (id: string, type: 'file' | 'folder') => 
 export const renameFileApi = async (id: string, name: string) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.put(`${API_URL}/files/${id}/rename`, { name }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.put(
+      `${API_URL}/files/${id}/rename`,
+      { name },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error renaming file:", error);
@@ -194,11 +217,15 @@ export const renameFileApi = async (id: string, name: string) => {
 export const moveFileApi = async (id: string, parentId: string | null) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.put(`${API_URL}/files/${id}/move`, { folderId: parentId }, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const response = await axios.put(
+      `${API_URL}/files/${id}/move`,
+      { folderId: parentId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error moving file:", error);
@@ -206,18 +233,33 @@ export const moveFileApi = async (id: string, parentId: string | null) => {
   }
 };
 
-export const searchFilesAndFolders = async (query: string, limit: number = 5) => {
+export const searchFilesAndFolders = async (
+  query: string,
+  limit: number = 5,
+  type?: string,
+  dateFrom?: string,
+  page: number = 1,
+) => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/dashboard/search?q=${encodeURIComponent(query)}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
+    const params = new URLSearchParams();
+    params.append("q", query);
+    params.append("limit", limit.toString());
+    params.append("page", page.toString());
+    if (type) params.append("type", type);
+    if (dateFrom) params.append("dateFrom", dateFrom);
+
+    const response = await axios.get(
+      `${API_URL}/dashboard/search?${params.toString()}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       },
-    });
+    );
     return response.data;
   } catch (error) {
     console.error("Error searching files and folders:", error);
     throw error;
   }
 };
-

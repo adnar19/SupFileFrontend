@@ -1,43 +1,30 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import {
-  FolderPlus,
-  LogOut,
-  Moon,
-  Search,
-  Sun,
-  Upload,
-  User,
-  File,
-  Folder,
-} from "lucide-react";
+import { FolderPlus, LogOut, Moon, Sun, Upload, User } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Logout } from "../../services/auth";
 import useAuth from "../../hooks/useAuth";
 import { useFileSystem } from "../../contexts/FileSystemContext";
 import { createFolder } from "../../services/folder";
-import { uploadFile, searchFilesAndFolders } from "../../services/file";
+import { uploadFile } from "../../services/file";
 import { toast } from "react-toastify";
 import Modal from "../../components/Modal";
 import { PreviewModal } from "../../components/PreviewModal";
-import { getFileIcon, formatFileSize } from "../../utils/fileUtils";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [searchResults, setSearchResults] = useState<{ files: any[]; folders: any[] }>({ files: [], folders: [] });
-  const [isSearching, setIsSearching] = useState(false);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const searchContainerRef = useRef<HTMLDivElement>(null);
-
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [itemToPreview, setItemToPreview] = useState<{
+    id: string;
+    name: string;
+    type: "file" | "folder";
+  } | null>(null);
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -73,7 +60,13 @@ const Navbar: React.FC = () => {
     window.location.href = "/login";
   };
 
-  const { currentFolderId, setCurrentFolderId, currentFolderName, setCurrentFolderName, triggerRefresh } = useFileSystem();
+  const {
+    currentFolderId,
+    setCurrentFolderId,
+    currentFolderName,
+    setCurrentFolderName,
+    triggerRefresh,
+  } = useFileSystem();
 
   const handleCreateFolder = () => {
     setNewFolderName("");
@@ -126,7 +119,7 @@ const Navbar: React.FC = () => {
       if (res && res.success) {
         toast.success("File uploaded successfully");
         triggerRefresh();
-        window.dispatchEvent(new Event('storage-updated'));
+        window.dispatchEvent(new Event("storage-updated"));
         setIsUploadModalOpen(false);
       }
     } catch (error) {
@@ -137,42 +130,12 @@ const Navbar: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!searchQuery.trim()) {
-      setSearchResults({ files: [], folders: [] });
-      setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const delayDebounceFn = setTimeout(async () => {
-      try {
-        const results = await searchFilesAndFolders(searchQuery, 5);
-        if (results && results.success) {
-          setSearchResults(results.data);
-        }
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(delayDebounceFn);
-  }, [searchQuery]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(event.target as Node)
       ) {
         setShowAccountMenu(false);
-      }
-      if (
-        searchContainerRef.current &&
-        !searchContainerRef.current.contains(event.target as Node)
-      ) {
-        setShowSearchResults(false);
       }
     };
 
@@ -182,7 +145,9 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
-  const isActionPage = !["/trash", "/account-settings"].includes(location.pathname);
+  const isActionPage = !["/trash", "/account-settings"].includes(
+    location.pathname,
+  );
 
   return (
     <header
@@ -195,124 +160,15 @@ const Navbar: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold">
-          {(location.pathname === '/my-drive' && currentFolderName) ? currentFolderName : getPageTitle(location.pathname)}
+            {location.pathname === "/my-drive" && currentFolderName
+              ? currentFolderName
+              : getPageTitle(location.pathname)}
           </h1>
         </div>
 
         <div className="flex items-center space-x-3">
           {isActionPage && (
             <>
-              {/* Search */}
-              <div className="relative" ref={searchContainerRef}>
-                <Search
-                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4"
-                  style={{ color: "var(--text-tertiary)" }}
-                />
-                <input
-                  type="text"
-                  placeholder="Search files..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setShowSearchResults(true);
-                  }}
-                  onFocus={() => setShowSearchResults(true)}
-                  className="pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-80"
-                  style={{
-                    backgroundColor: "var(--bg-tertiary)",
-                    border: "1px solid var(--border-color)",
-                    color: "var(--text-primary)",
-                  }}
-                />
-
-                {/* Search Results Dropdown */}
-                {showSearchResults && searchQuery.trim() !== "" && (
-                  <div
-                    className="absolute left-0 mt-2 w-80 rounded-lg shadow-xl border py-2 z-50 overflow-hidden"
-                    style={{
-                      backgroundColor: "var(--card-bg)",
-                      borderColor: "var(--border-color)",
-                    }}
-                  >
-                    {isSearching ? (
-                      <div className="flex items-center justify-center p-6 space-x-2">
-                        <div className="w-4 h-4 border-2 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
-                        <span className="text-xs text-[var(--text-tertiary)] animate-pulse">Searching...</span>
-                      </div>
-                    ) : (searchResults.files.length === 0 && searchResults.folders.length === 0) ? (
-                      <div className="p-6 text-center text-xs text-[var(--text-tertiary)]">
-                        No results found for "{searchQuery}"
-                      </div>
-                    ) : (
-                      <div className="max-h-72 overflow-y-auto custom-scrollbar">
-                        {/* Folders Section */}
-                        {searchResults.folders.length > 0 && (
-                          <div className="mb-2">
-                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] border-b border-[var(--border-color)]/30">
-                              Folders
-                            </div>
-                            {searchResults.folders.map((folder) => (
-                              <button
-                                key={folder.id}
-                                onClick={() => {
-                                  setCurrentFolderId(folder.id);
-                                  setCurrentFolderName(folder.name);
-                                  setShowSearchResults(false);
-                                  setSearchQuery("");
-                                  navigate("/my-drive");
-                                }}
-                                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors"
-                              >
-                                <div className="flex-shrink-0">
-                                  {getFileIcon("folder", folder.name)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-[var(--text-primary)] truncate">
-                                    {folder.name}
-                                  </p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Files Section */}
-                        {searchResults.files.length > 0 && (
-                          <div>
-                            <div className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] border-b border-[var(--border-color)]/30">
-                              Files
-                            </div>
-                            {searchResults.files.map((file) => (
-                              <button
-                                key={file.id}
-                                onClick={() => {
-                                  setItemToPreview({ id: file.id, name: file.name, type: "file" });
-                                  setIsPreviewModalOpen(true);
-                                  setShowSearchResults(false);
-                                }}
-                                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-[var(--bg-hover)] transition-colors"
-                              >
-                                <div className="flex-shrink-0">
-                                  {getFileIcon("file", file.name)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-[var(--text-primary)] truncate">
-                                    {file.name}
-                                  </p>
-                                  <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5">
-                                    {formatFileSize(file.size)}
-                                  </p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-
               {/* Upload Button */}
               <button
                 onClick={handleUploadClick}
@@ -362,7 +218,11 @@ const Navbar: React.FC = () => {
               aria-expanded={showAccountMenu}
             >
               {user?.avatar ? (
-                <img src={user.avatar} alt="Profile" className="w-full h-full object-cover" />
+                <img
+                  src={user.avatar}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
               ) : (
                 <User className="w-5 h-5" />
               )}
@@ -377,9 +237,22 @@ const Navbar: React.FC = () => {
                 }}
               >
                 {user && (
-                  <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--border-color)' }}>
-                    <p className="text-xs font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.fullName}</p>
-                    <p className="text-[10px] truncate" style={{ color: 'var(--text-tertiary)' }}>{user.email}</p>
+                  <div
+                    className="px-4 py-2 border-b"
+                    style={{ borderColor: "var(--border-color)" }}
+                  >
+                    <p
+                      className="text-xs font-semibold truncate"
+                      style={{ color: "var(--text-primary)" }}
+                    >
+                      {user.fullName}
+                    </p>
+                    <p
+                      className="text-[10px] truncate"
+                      style={{ color: "var(--text-tertiary)" }}
+                    >
+                      {user.email}
+                    </p>
                   </div>
                 )}
                 <Link
@@ -412,7 +285,10 @@ const Navbar: React.FC = () => {
       >
         <form onSubmit={confirmCreateFolder} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
+            <label
+              className="block text-sm font-medium mb-1"
+              style={{ color: "var(--text-secondary)" }}
+            >
               Folder Name
             </label>
             <input
@@ -434,7 +310,10 @@ const Navbar: React.FC = () => {
               type="button"
               onClick={() => setIsCreateModalOpen(false)}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+              style={{
+                color: "var(--text-secondary)",
+                backgroundColor: "transparent",
+              }}
             >
               Cancel
             </button>
@@ -463,11 +342,16 @@ const Navbar: React.FC = () => {
           >
             <Upload className="w-10 h-10 text-blue-500" />
             <div className="text-center">
-              <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
+              <p
+                className="text-sm font-medium"
+                style={{ color: "var(--text-primary)" }}
+              >
                 {selectedFile ? selectedFile.name : "Click to select a file"}
               </p>
               <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                {selectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : "Support all file types"}
+                {selectedFile
+                  ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
+                  : "Support all file types"}
               </p>
             </div>
             <input
@@ -483,7 +367,10 @@ const Navbar: React.FC = () => {
               type="button"
               onClick={() => setIsUploadModalOpen(false)}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{ color: "var(--text-secondary)", backgroundColor: "transparent" }}
+              style={{
+                color: "var(--text-secondary)",
+                backgroundColor: "transparent",
+              }}
             >
               Cancel
             </button>
