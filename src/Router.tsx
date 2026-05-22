@@ -14,7 +14,7 @@ import AccountSettings from "./pages/Auth/account_settings";
 import VerifyEmail from "./pages/Auth/verify-email";
 import ForgotPasswordPage from "./pages/Auth/forgot-password";
 import PublicShare from "./pages/PublicShare";
-import SharedWithMe from "./components/SharedWithMe";
+import SharedWithMe from "./pages/Dashboard/SharedWithMe";
 
 const AppRouter: React.FC = () => {
   return (

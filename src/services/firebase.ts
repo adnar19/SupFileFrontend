@@ -46,12 +46,6 @@ export const handleSignIn = async (providerName: 'google' | 'microsoft') => {
   
   try {
     const result = await signInWithPopup(auth, provider);
-    
-    // On récupère le nom propre via notre fonction de formatage
-    const providerId = result.providerId || (providerName === 'google' ? 'google.com' : 'microsoft.com');
-    const cleanName = formatProviderName(providerId);
-    
-    console.log(`Utilisateur connecté via ${cleanName} :`, result.user);
     return result.user;
   } catch (error) {
     console.error(`Erreur lors de la connexion via ${providerName}:`, error);

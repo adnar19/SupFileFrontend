@@ -127,7 +127,6 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
                 );
                 return error.response;
             }
-            console.log(error);
             toast.error("Server Error !");
         }
     }

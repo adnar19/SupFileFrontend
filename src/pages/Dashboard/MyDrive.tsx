@@ -108,7 +108,6 @@ const MyDrive: React.FC = () => {
   const {
     currentFolderId,
     setCurrentFolderId,
-    currentFolderName,
     setCurrentFolderName,
     refreshTrigger,
     triggerRefresh,

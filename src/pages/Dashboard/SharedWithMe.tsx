@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download } from 'lucide-react';
-import { getSharedWithMe, type SharedItem } from '../services/sharing';
+import { getSharedWithMe, type SharedItem } from '../../services/sharing';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { formatFileSize } from '../utils/fileUtils';
-import { downloadFile } from '../services/file'; // Assuming this exists for internal files
+import { formatFileSize } from '../../utils/fileUtils';
+import { downloadFile } from '../../services/file'; // Assuming this exists for internal files
 
 const SharedWithMe: React.FC = () => {
   const [sharedItems, setSharedItems] = useState<SharedItem[]>([]);
@@ -60,11 +60,15 @@ const SharedWithMe: React.FC = () => {
 
   if (sharedItems.length === 0) {
     return (
-      <div className="text-center py-12 bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
+      <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-screen">
+<div className="text-center py-12 bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
         <User className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-4 opacity-50" />
         <h3 className="text-lg font-semibold text-[var(--text-primary)]">Nothing shared with you yet</h3>
         <p className="text-[var(--text-secondary)] mt-2">Files and folders shared with you by others will appear here.</p>
       </div>
+      </div>
+
+      
     );
   }
 

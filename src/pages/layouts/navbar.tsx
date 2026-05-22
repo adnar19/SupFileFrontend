@@ -20,7 +20,7 @@ const Navbar: React.FC = () => {
   const navigate = useNavigate();
 
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
-  const [itemToPreview, setItemToPreview] = useState<{
+  const [itemToPreview] = useState<{
     id: string;
     name: string;
     type: "file" | "folder";

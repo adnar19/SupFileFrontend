@@ -120,7 +120,7 @@ const Login: React.FC = () => {
             "
           >
             <img
-              src="./../logoo.jpg"
+              src="./../logoo.png"
               alt="SupFile"
               className="w-[clamp(120px,20vw,180px)] mx-auto object-contain"
             />
