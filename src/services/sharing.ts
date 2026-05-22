@@ -39,6 +39,23 @@ export interface MyPublicLink {
   createdAt: string;
 }
 
+export interface SharedItem {
+  type: "file" | "folder";
+  item: {
+    id: string;
+    name: string;
+    size?: string;
+    mimeType?: string;
+    path?: string;
+  };
+  sharedBy: {
+    fullName: string;
+    email: string;
+  };
+  sharedAt: string;
+  permission: "READ" | "WRITE";
+}
+
 export const createPublicLink = async (payload: PublicShareCreatePayload) => {
   try {
     const token = Cookies.get("token");
@@ -108,12 +125,12 @@ export const downloadPublicShare = async (shareToken: string, password?: string)
   }
 };
 
-export const shareFolderInternal = async (folderId: string, email: string, permission: "READ" | "WRITE" = "READ") => {
+export const shareFolderInternal = async (itemId: string, type: "file" | "folder", email: string, permission: "READ" | "WRITE" = "READ") => {
   try {
     const token = Cookies.get("token");
     const response = await axios.post(
       `${API_URL}/share/internal`,
-      { folderId, email, permission },
+      { itemId, type, email, permission },
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -122,19 +139,19 @@ export const shareFolderInternal = async (folderId: string, email: string, permi
     );
     return response.data;
   } catch (error) {
-    console.error("Error sharing folder internally:", error);
+    console.error("Error sharing item internally:", error);
     throw error;
   }
 };
 
-export const removeInternalShare = async (folderId: string, email: string) => {
+export const removeInternalShare = async (itemId: string, type: "file" | "folder", email: string) => {
   try {
     const token = Cookies.get("token");
     const response = await axios.delete(`${API_URL}/share/internal`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      data: { folderId, email },
+      data: { itemId, type, email },
     });
     return response.data;
   } catch (error) {
@@ -153,15 +170,15 @@ export const getSharedWithMe = async () => {
     });
     return response.data;
   } catch (error) {
-    console.error("Error listing folders shared with me:", error);
+    console.error("Error listing items shared with me:", error);
     throw error;
   }
 };
 
-export const getFolderShares = async (folderId: string) => {
+export const getFolderShares = async (itemId: string, type: "file" | "folder") => {
   try {
     const token = Cookies.get("token");
-    const response = await axios.get(`${API_URL}/share/internal/${folderId}/shares`, {
+    const response = await axios.get(`${API_URL}/share/internal/${itemId}/shares?type=${type}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

@@ -1,4 +1,4 @@
-import { HardDrive, File, Star, Trash2, LayoutDashboard } from "lucide-react";
+import { HardDrive, File, Star, Trash2, LayoutDashboard, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import useAuth from "../../hooks/useAuth";
@@ -32,6 +32,11 @@ const Sidebar: React.FC = () => {
       icon: <File className="w-5 h-5" />,
       label: "All Files",
       path: "/all-files",
+    },
+    {
+      icon: <Users className="w-5 h-5" />,
+      label: "Shared with me",
+      path: "/shared-with-me",
     },
     {
       icon: <Star className="w-5 h-5" />,

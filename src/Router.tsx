@@ -14,6 +14,7 @@ import AccountSettings from "./pages/Auth/account_settings";
 import VerifyEmail from "./pages/Auth/verify-email";
 import ForgotPasswordPage from "./pages/Auth/forgot-password";
 import PublicShare from "./pages/PublicShare";
+import SharedWithMe from "./components/SharedWithMe";
 
 const AppRouter: React.FC = () => {
   return (
@@ -27,7 +28,9 @@ const AppRouter: React.FC = () => {
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/my-drive" element={<MyDrive />} />
+          <Route path="/folder/:folderId" element={<MyDrive />} />
           <Route path="/all-files" element={<AllFiles />} />
+          <Route path="/shared-with-me" element={<SharedWithMe />} />
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/trash" element={<Trash />} />
           <Route path="/account-settings" element={<AccountSettings />} />

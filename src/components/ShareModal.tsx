@@ -86,12 +86,10 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
         }
       }
 
-      // 2. Fetch collaborators if folder
-      if (itemType === 'folder') {
-        const collabRes = await getFolderShares(itemId);
-        if (collabRes.success) {
-          setCollaborators(collabRes.data);
-        }
+      // 2. Fetch collaborators
+      const collabRes = await getFolderShares(itemId, itemType);
+      if (collabRes && collabRes.success) {
+        setCollaborators(collabRes.data);
       }
     } catch (err: any) {
       console.error('Error fetching share status:', err);
@@ -171,14 +169,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
     if (!collabEmail.trim()) return;
     setCollabLoading(true);
     try {
-      const res = await shareFolderInternal(itemId, collabEmail.trim(), collabPermission);
+      const res = await shareFolderInternal(itemId, itemType, collabEmail.trim(), collabPermission);
       if (res.success) {
         toast.success(res.message || 'Collaborator added successfully');
         setCollabEmail('');
         // Refresh list
-        const collabRes = await getFolderShares(itemId);
-        if (collabRes.success) {
-          setCollaborators(collabRes.data);
+        const collabRefreshRes = await getFolderShares(itemId, itemType);
+        if (collabRefreshRes.success) {
+          setCollaborators(collabRefreshRes.data);
         }
       }
     } catch (err: any) {
@@ -192,14 +190,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
     if (!window.confirm(`Are you sure you want to stop sharing with ${email}?`)) return;
     setCollabLoading(true);
     try {
-      const res = await removeInternalShare(itemId, email);
+      const res = await removeInternalShare(itemId, itemType, email);
       if (res.success) {
         toast.success(res.message || 'Collaborator removed');
         setCollaborators(collaborators.filter(c => c.user.email !== email));
         // Refresh list
-        const collabRes = await getFolderShares(itemId);
-        if (collabRes.success) {
-          setCollaborators(collabRes.data);
+        const collabRefreshRes = await getFolderShares(itemId, itemType);
+        if (collabRefreshRes.success) {
+          setCollaborators(collabRefreshRes.data);
         }
       }
     } catch (err: any) {
@@ -212,33 +210,31 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Share "${itemName}"`} maxWidth="max-w-lg">
       <div className="space-y-6">
-        {/* Navigation Tabs (Only show for folders since backend internal sharing is folder-only) */}
-        {itemType === 'folder' && (
-          <div className="flex border-b border-[var(--border-color)] p-0.5 bg-[var(--bg-tertiary)]/50 rounded-xl">
-            <button
-              onClick={() => setActiveTab('public')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'public'
-                  ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
-                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              <Globe className="w-4 h-4" />
-              <span>Public Link</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('internal')}
-              className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
-                activeTab === 'internal'
-                  ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
-                  : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Collaborators</span>
-            </button>
-          </div>
-        )}
+        {/* Navigation Tabs (Available for both files and folders) */}
+        <div className="flex border-b border-[var(--border-color)] p-0.5 bg-[var(--bg-tertiary)]/50 rounded-xl">
+          <button
+            onClick={() => setActiveTab('public')}
+            className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'public'
+                ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            <Globe className="w-4 h-4" />
+            <span>Public Link</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('internal')}
+            className={`flex-1 flex items-center justify-center space-x-2 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'internal'
+                ? 'bg-[var(--bg-secondary)] text-[var(--text-primary)] shadow-sm'
+                : 'text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>Collaborators</span>
+          </button>
+        </div>
 
         {/* PUBLIC SHARING TAB */}
         {activeTab === 'public' && (
@@ -290,7 +286,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
                   {loading && <RefreshCw className="w-4 h-4 animate-spin text-[var(--text-tertiary)]" />}
                 </div>
               </div>
-            ) : (
+              ) : (
               // Generate Share Link options
               <div className="space-y-5">
                 <p className="text-sm text-[var(--text-secondary)]">
@@ -361,8 +357,8 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
                   {loading ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
                   ) : (
-                    <>
-                      <Link className="w-4.5 h-4.5" />
+                    <> 
+                      <Link className="w-5 h-5" />
                       <span>Generate Public Link</span>
                     </>
                   )}
@@ -373,7 +369,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
         )}
 
         {/* COLLABORATORS TAB */}
-        {activeTab === 'internal' && itemType === 'folder' && (
+        {activeTab === 'internal' && (
           <div className="space-y-5">
             {/* Add Collaborator Form */}
             <form onSubmit={handleAddCollaborator} className="space-y-3">
@@ -403,7 +399,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
                     disabled={collabLoading || !collabEmail}
                     className="px-4 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-all disabled:opacity-50 flex items-center justify-center"
                   >
-                    {collabLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-4.5 h-4.5" />}
+                    {collabLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Plus className="w-5 h-5" />}
                   </button>
                 </div>
               </div>
@@ -418,7 +414,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
               {collaborators.length === 0 ? (
                 <div className="text-center py-6 border border-dashed border-[var(--border-color)] rounded-xl">
                   <Users className="w-8 h-8 text-[var(--text-tertiary)] mx-auto mb-2 opacity-50" />
-                  <p className="text-sm text-[var(--text-secondary)]">Only you have access to this folder.</p>
+                  <p className="text-sm text-[var(--text-secondary)]">Only you have access to this {itemType}.</p>
                 </div>
               ) : (
                 <div className="border border-[var(--border-color)] rounded-xl divide-y divide-[var(--border-color)] max-h-48 overflow-y-auto bg-[var(--bg-tertiary)]/20">
@@ -455,7 +451,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
                           className="p-1 text-[var(--text-tertiary)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all"
                           title="Revoke access"
                         >
-                          <UserMinus className="w-4.5 h-4.5" />
+                          <UserMinus className="w-5 h-5" />
                         </button>
                       </div>
                     </div>
