@@ -6,7 +6,7 @@ import useAuth from "../../hooks/useAuth";
 import { toast } from "react-toastify";
 import { Signup, GoogleSignup, OAuthSignup } from "../../services/auth";
 import { SyncLoader } from "react-spinners";
-import { handleSignIn } from "../../services/firebase";
+import {  handleSignIn } from "../../services/firebase";
 
 const SignUp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
