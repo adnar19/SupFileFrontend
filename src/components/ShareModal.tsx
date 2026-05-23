@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Link, Copy, Check, Trash2, Lock, Calendar, Users, 
-  UserMinus, Shield, Plus, Globe, Key, RefreshCw 
+  UserMinus, Shield, Plus, Globe, Key, RefreshCw, AlertTriangle 
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from './Modal';
@@ -11,7 +11,8 @@ import {
   getMyPublicLinks, 
   shareFolderInternal, 
   removeInternalShare, 
-  getFolderShares 
+  getFolderShares,
+  updateInternalSharePermission
 } from '../services/sharing';
 
 interface ShareModalProps {
@@ -52,6 +53,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
   const [collabEmail, setCollabEmail] = useState('');
   const [collabPermission, setCollabPermission] = useState<'READ' | 'WRITE'>('READ');
   const [collabLoading, setCollabLoading] = useState(false);
+
+  // Confirmation modal state
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [confirmData, setConfirmData] = useState<{
+    title: string;
+    message: string;
+    email: string;
+  } | null>(null);
 
   // Initialize and check if sharing links already exist
   const fetchShareStatus = async () => {
@@ -186,19 +195,45 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
     }
   };
 
-  const handleRemoveCollaborator = async (email: string) => {
-    if (!window.confirm(`Are you sure you want to stop sharing with ${email}?`)) return;
+  const handleUpdatePermission = async (shareId: string, newPermission: 'READ' | 'WRITE') => {
     setCollabLoading(true);
     try {
-      const res = await removeInternalShare(itemId, itemType, email);
+      const res = await updateInternalSharePermission(shareId, newPermission);
+      if (res.success) {
+        toast.success(res.message || 'Permission updated');
+        // Refresh list
+        const collabRes = await getFolderShares(itemId, itemType);
+        if (collabRes && collabRes.success) {
+          setCollaborators(collabRes.data);
+        }
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update permission');
+    } finally {
+      setCollabLoading(false);
+    }
+  };
+
+  const handleRemoveCollaborator = async (email: string) => {
+    setConfirmData({
+      title: "Revoke Access",
+      message: `Are you sure you want to stop sharing with ${email}?`,
+      email
+    });
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmRemoveCollaborator = async () => {
+    if (!confirmData) return;
+    setCollabLoading(true);
+    try {
+      const res = await removeInternalShare(itemId, itemType, confirmData.email);
       if (res.success) {
         toast.success(res.message || 'Collaborator removed');
-        setCollaborators(collaborators.filter(c => c.user.email !== email));
+        setCollaborators(collaborators.filter(c => c.user.email !== confirmData.email));
+        setIsConfirmModalOpen(false);
         // Refresh list
-        const collabRefreshRes = await getFolderShares(itemId, itemType);
-        if (collabRefreshRes.success) {
-          setCollaborators(collabRefreshRes.data);
-        }
+        fetchShareStatus();
       }
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to remove collaborator');
@@ -441,10 +476,15 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
                       </div>
 
                       <div className="flex items-center space-x-2 shrink-0">
-                        <span className="flex items-center space-x-1 text-xs px-2.5 py-1 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] font-medium text-[var(--text-secondary)]">
-                          <Shield className="w-3 h-3 opacity-70" />
-                          <span>{c.permission === 'WRITE' ? 'Editor' : 'Viewer'}</span>
-                        </span>
+                        <select
+                          value={c.permission}
+                          onChange={(e) => handleUpdatePermission(c.shareId, e.target.value as 'READ' | 'WRITE')}
+                          disabled={collabLoading}
+                          className="text-xs px-2 py-1 rounded-full bg-[var(--bg-tertiary)] border border-[var(--border-color)] font-medium text-[var(--text-secondary)] outline-none focus:border-blue-500 cursor-pointer hover:bg-[var(--bg-hover)] transition-all"
+                        >
+                          <option value="READ">Viewer</option>
+                          <option value="WRITE">Editor</option>
+                        </select>
                         <button
                           onClick={() => handleRemoveCollaborator(c.user.email)}
                           disabled={collabLoading}
@@ -462,6 +502,40 @@ const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, itemId, itemNa
           </div>
         )}
       </div>
+
+      {/* Nested confirmation modal */}
+      <Modal 
+        isOpen={isConfirmModalOpen} 
+        onClose={() => setIsConfirmModalOpen(false)} 
+        title={confirmData?.title || "Confirm Action"}
+      >
+        <div className="space-y-4">
+          <div className="flex items-center space-x-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+            <p className="text-sm font-semibold text-red-500">Warning: Revoking Access</p>
+          </div>
+          <p className="text-sm text-[var(--text-primary)]">
+            {confirmData?.message}
+          </p>
+          <div className="flex justify-end space-x-3 pt-2">
+            <button
+              type="button"
+              disabled={collabLoading}
+              onClick={() => setIsConfirmModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmRemoveCollaborator}
+              disabled={collabLoading}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+            >
+              {collabLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Revoke Access'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </Modal>
   );
 };

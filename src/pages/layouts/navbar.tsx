@@ -48,6 +48,8 @@ const Navbar: React.FC = () => {
         return "Favorites";
       case "/trash":
         return "Trash";
+      case "/shared-with-me":
+        return "Sharing Management";
       case "/account-settings":
         return "Account Settings";
       default:
@@ -145,7 +147,7 @@ const Navbar: React.FC = () => {
     };
   }, []);
 
-  const isActionPage = !["/trash", "/account-settings"].includes(
+  const isActionPage = !["/trash", "/account-settings", "/shared-with-me"].includes(
     location.pathname,
   );
 

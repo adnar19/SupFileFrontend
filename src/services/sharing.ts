@@ -56,6 +56,18 @@ export interface SharedItem {
   permission: "READ" | "WRITE";
 }
 
+export interface Collaborator {
+  shareId: string;
+  user: {
+    id: string;
+    email: string;
+    fullName: string;
+    avatarUrl: string;
+  };
+  permission: "READ" | "WRITE";
+  sharedAt: string;
+}
+
 export const createPublicLink = async (payload: PublicShareCreatePayload) => {
   try {
     const token = Cookies.get("token");
@@ -186,6 +198,25 @@ export const getFolderShares = async (itemId: string, type: "file" | "folder") =
     return response.data;
   } catch (error) {
     console.error("Error listing folder shares:", error);
+    throw error;
+  }
+};
+
+export const updateInternalSharePermission = async (shareId: string, permission: "READ" | "WRITE") => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.patch(
+      `${API_URL}/share/internal/${shareId}/permission`,
+      { permission },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating share permission:", error);
     throw error;
   }
 };
