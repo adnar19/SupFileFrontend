@@ -108,6 +108,7 @@ const MyDrive: React.FC = () => {
   const {
     currentFolderId,
     setCurrentFolderId,
+    currentFolderName,
     setCurrentFolderName,
     refreshTrigger,
     triggerRefresh,
@@ -156,7 +157,19 @@ const MyDrive: React.FC = () => {
         setItems([...folderItems, ...fileItems]);
         // Filter out the current folder from the breadcrumbs items (since it will be shown via currentPageName)
         const currentId = currentFolder?.id;
-        setBreadcrumbs((bc || []).filter((item: any) => item.id !== currentId));
+        let finalBreadcrumbs = (bc || []).filter((item: any) => item.id !== currentId);
+        
+        // At root level, clear breadcrumbs (only show "My Files" in currentPageName)
+        if (!currentFolderId) {
+          finalBreadcrumbs = [];
+        } else {
+          // In a subfolder, add "My Files" at the beginning if not already present
+          if (!finalBreadcrumbs.some((item: any) => item.name === "My Files")) {
+            finalBreadcrumbs = [{ id: "root", name: "My Files" }, ...finalBreadcrumbs];
+          }
+        }
+        
+        setBreadcrumbs(finalBreadcrumbs);
         if (res.pagination) setPagination(res.pagination);
       }
     } catch (error) {
@@ -265,7 +278,7 @@ const MyDrive: React.FC = () => {
     try {
       await toggleFavoriteApi(id, type);
       setItems(
-        items.map((item) =>
+        items.map((item: FileItem) =>
           item.id === id ? { ...item, isFavorite: !item.isFavorite } : item,
         ),
       );
@@ -398,8 +411,14 @@ const MyDrive: React.FC = () => {
             setPagination((prev) => ({ ...prev, currentPage: 1 }));
           }}
           onItemClick={(id) => {
-            setCurrentFolderId(id);
+            if (id === "root") {
+              setCurrentFolderId(undefined);
+              setCurrentFolderName(undefined);
+            } else {
+              setCurrentFolderId(id);
+            }
           }}
+          currentPageName={currentFolderName || "My Files"}
         />
         <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
       </div>

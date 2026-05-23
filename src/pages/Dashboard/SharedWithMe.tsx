@@ -295,7 +295,7 @@ const SharedWithMe: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-color)]">
-            {sharedItems.slice((currentPage - 1) * limit, currentPage * limit).map((item, index) => (
+            {sharedItems.slice((currentPage - 1) * limit, currentPage * limit).map((item: SharedItem, index) => (
               <tr key={index} className="hover:bg-[var(--bg-hover)] transition-all group cursor-default">
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-3">

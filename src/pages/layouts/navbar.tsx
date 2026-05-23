@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FolderPlus, LogOut, Moon, Sun, Upload, User } from "lucide-react";
+import { FolderPlus, LogOut, Moon, Sun, Upload, User, File as FileIcon, X as CloseIcon } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Logout } from "../../services/auth";
 import useAuth from "../../hooks/useAuth";
@@ -33,6 +33,8 @@ const Navbar: React.FC = () => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const getPageTitle = (path: string) => {
@@ -79,16 +81,21 @@ const Navbar: React.FC = () => {
     e.preventDefault();
     if (!newFolderName || newFolderName.trim() === "") return;
 
+    const isDrivePage = location.pathname === "/my-drive" || location.pathname.startsWith("/folder/");
+    const parentId = isDrivePage ? (currentFolderId || "root") : "root";
+
     try {
       setIsCreating(true);
-      const res = await createFolder(newFolderName, currentFolderId);
+      const res = await createFolder(newFolderName, parentId);
       if (res && res.success && res.data) {
         toast.success("Folder created successfully");
-        setCurrentFolderId(res.data.id);
-        setCurrentFolderName(res.data.name); // Update name immediately
+        if (!isDrivePage) {
+          setCurrentFolderId(undefined);
+          setCurrentFolderName("My Files");
+          navigate("/my-drive");
+        }
         triggerRefresh();
         setIsCreateModalOpen(false);
-        navigate("/my-drive");
       }
     } catch (error) {
       toast.error("Failed to create folder");
@@ -100,6 +107,25 @@ const Navbar: React.FC = () => {
   const handleUploadClick = () => {
     setSelectedFile(null);
     setIsUploadModalOpen(true);
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setIsDragging(true);
+    } else if (e.type === "dragleave") {
+      setIsDragging(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      setSelectedFile(e.dataTransfer.files[0]);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -117,9 +143,28 @@ const Navbar: React.FC = () => {
 
     try {
       setIsUploading(true);
-      const res = await uploadFile(selectedFile, currentFolderId || "root");
+      setUploadProgress(0);
+      
+      // Simulation de progression (à remplacer par la vraie progression via Axios)
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+      }, 200);
+
+      const isDrivePage = location.pathname === "/my-drive" || location.pathname.startsWith("/folder/");
+      const parentId = isDrivePage ? (currentFolderId || "root") : "root";
+
+      const res = await uploadFile(selectedFile, parentId);
+      
+      clearInterval(progressInterval);
+      setUploadProgress(100);
+
       if (res && res.success) {
         toast.success("File uploaded successfully");
+        if (!isDrivePage) {
+          setCurrentFolderId(undefined);
+          setCurrentFolderName("My Files");
+          navigate("/my-drive");
+        }
         triggerRefresh();
         window.dispatchEvent(new Event("storage-updated"));
         setIsUploadModalOpen(false);
@@ -128,6 +173,7 @@ const Navbar: React.FC = () => {
       toast.error("Failed to upload file");
     } finally {
       setIsUploading(false);
+      setTimeout(() => setUploadProgress(0), 500);
     }
   };
 
@@ -162,7 +208,7 @@ const Navbar: React.FC = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold">
-            {location.pathname === "/my-drive" && currentFolderName
+            {location.pathname.startsWith("/folder/") && currentFolderName
               ? currentFolderName
               : getPageTitle(location.pathname)}
           </h1>
@@ -338,22 +384,33 @@ const Navbar: React.FC = () => {
       >
         <form onSubmit={confirmUpload} className="space-y-4">
           <div
-            onClick={() => fileInputRef.current?.click()}
-            className="border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center space-y-3 cursor-pointer transition-all hover:bg-[var(--bg-tertiary)]"
-            style={{ borderColor: "var(--border-color)" }}
+            onClick={() => !isUploading && fileInputRef.current?.click()}
+            onDragEnter={handleDrag}
+            onDragOver={handleDrag}
+            onDragLeave={handleDrag}
+            onDrop={handleDrop}
+            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center space-y-3 cursor-pointer transition-all relative ${
+              isDragging 
+                ? "border-blue-500 bg-blue-500/5" 
+                : "border-[var(--border-color)] hover:bg-[var(--bg-tertiary)]"
+            } ${isUploading ? "opacity-50 cursor-not-allowed" : ""}`}
           >
-            <Upload className="w-10 h-10 text-blue-500" />
+            {selectedFile ? (
+              <FileIcon className="w-10 h-10 text-blue-500" />
+            ) : (
+              <Upload className={`w-10 h-10 ${isDragging ? "text-blue-500 animate-bounce" : "text-blue-500"}`} />
+            )}
             <div className="text-center">
               <p
                 className="text-sm font-medium"
                 style={{ color: "var(--text-primary)" }}
               >
-                {selectedFile ? selectedFile.name : "Click to select a file"}
+                {selectedFile ? selectedFile.name : "Click or drag file here"}
               </p>
               <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
                 {selectedFile
                   ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`
-                  : "Support all file types"}
+                  : "Supports all file types"}
               </p>
             </div>
             <input
@@ -361,8 +418,24 @@ const Navbar: React.FC = () => {
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
+              disabled={isUploading}
             />
           </div>
+
+          {isUploading && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-medium text-[var(--text-secondary)]">
+                <span>Uploading...</span>
+                <span>{uploadProgress}%</span>
+              </div>
+              <div className="w-full bg-[var(--bg-tertiary)] rounded-full h-1.5 overflow-hidden">
+                <div 
+                  className="bg-blue-500 h-full transition-all duration-300 ease-out"
+                  style={{ width: `${uploadProgress}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="flex justify-end space-x-3 pt-2">
             <button
