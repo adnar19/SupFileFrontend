@@ -10,6 +10,7 @@ import {
   deleteFolder,
   renameFolderApi,
   moveFolderApi,
+  downloadFolderApi,
 } from "../../services/folder";
 import {
   deleteFile,
@@ -288,19 +289,33 @@ const MyDrive: React.FC = () => {
     }
   };
 
-  const handleDownload = async (id: string, name: string) => {
+  const handleDownload = async (id: string, name: string, type?: "file" | "folder") => {
     try {
-      const blob = await downloadFile(id);
+      const displayItems = getDisplayItems();
+      const itemType = type || displayItems.find(i => i.id === id)?.type || "file";
+      
+      toast.info(`Preparing download for ${name}...`);
+      
+      let blob: Blob;
+      let fileName = name;
+
+      if (itemType === "file") {
+        blob = await downloadFile(id);
+      } else {
+        blob = await downloadFolderApi(id);
+        fileName = `${name}.zip`;
+      }
+
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", name);
+      link.setAttribute("download", fileName);
       document.body.appendChild(link);
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      toast.error("Download failed");
+      toast.error("Download failed. You might not have permission.");
     }
   };
 

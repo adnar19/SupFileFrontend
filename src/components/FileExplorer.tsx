@@ -224,8 +224,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                 <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                                 <span className="font-medium">Move</span>
                               </button>
-                              {item.type === 'file' && (
-                                <button 
+                              <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     onDownload(item.id, item.name);
@@ -236,7 +235,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                                   <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                                   <span className="font-medium">Download</span>
                                 </button>
-                              )}
                               <button 
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -394,8 +392,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                     <FolderInput className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                     <span className="font-medium">Move</span>
                   </button>
-                  {item.type === 'file' && (
-                    <button 
+                  <button 
                       onClick={(e) => {
                         e.stopPropagation();
                         onDownload(item.id, item.name);
@@ -406,7 +403,6 @@ const FileExplorer: React.FC<FileExplorerProps> = ({
                       <Download className="w-4 h-4 opacity-70 group-hover/item:scale-110 transition-transform" />
                       <span className="font-medium">Download</span>
                     </button>
-                  )}
                   <button 
                     onClick={(e) => {
                       e.stopPropagation();

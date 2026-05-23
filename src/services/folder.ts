@@ -109,3 +109,19 @@ export const deleteFolderPermanentlyApi = async (id: string) => {
     throw error;
   }
 };
+
+export const downloadFolderApi = async (folderId: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/folders/${folderId}/download`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error downloading folder:", error);
+    throw error;
+  }
+};

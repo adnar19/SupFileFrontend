@@ -15,6 +15,7 @@ import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { formatFileSize } from '../../utils/fileUtils';
 import { downloadFile } from '../../services/file';
+import { downloadFolderApi } from '../../services/folder';
 import Cookies from 'js-cookie';
 import Modal from '../../components/Modal';
 import { jwtDecode } from 'jwt-decode';
@@ -76,19 +77,43 @@ const SharedWithMe: React.FC = () => {
     }
   };
 
-  const handleDownload = async (item: SharedItem) => {
-    if (item.type !== 'file') return;
+  const handleDownload = async (arg1: any, name?: string, type?: 'file' | 'folder') => {
+    // Accept either (id, name, type) or a SharedItem object
+    let id: string;
+    let itemName: string;
+    let itemType: 'file' | 'folder';
+
+    if (arg1 && typeof arg1 === 'object' && arg1.item) {
+      const sharedItem: SharedItem = arg1 as SharedItem;
+      id = sharedItem.item.id;
+      itemName = sharedItem.item.name;
+      itemType = sharedItem.type;
+    } else {
+      id = arg1 as string;
+      itemName = name || 'download';
+      itemType = type || 'file';
+    }
+
     try {
-      toast.info(`Downloading ${item.item.name}...`);
-      const blob = await downloadFile(item.item.id);
+      toast.info(`Preparing "${itemName}" for download...`);
+
+      let blob: Blob;
+      const fileName = itemType === 'file' ? itemName : `${itemName}.zip`;
+
+      if (itemType === 'file') {
+        blob = await downloadFile(id);
+      } else {
+        blob = await downloadFolderApi(id);
+      }
+
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', item.item.name);
+      link.setAttribute('download', fileName || 'download.zip');
       document.body.appendChild(link);
       link.click();
       link.remove();
-      // ... (rest of download logic)
+      window.URL.revokeObjectURL(url);
     } catch (err) {
       toast.error('Failed to download file');
     }
@@ -351,18 +376,16 @@ const SharedWithMe: React.FC = () => {
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
-                    {item.type === 'file' && (
-                      <button 
-                        className="p-2 text-[var(--text-tertiary)] hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
-                        title="Download"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDownload(item);
-                        }}
-                      >
-                        <Download className="w-5 h-5" />
-                      </button>
-                    )}
+                    <button 
+                      className="p-2 text-[var(--text-tertiary)] hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
+                      title="Download"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownload(item);
+                      }}
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
                     <button 
                       className="p-2 text-[var(--text-tertiary)] hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
                       title="Open"
