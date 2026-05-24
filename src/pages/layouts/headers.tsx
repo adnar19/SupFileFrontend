@@ -4,23 +4,19 @@ import Sidebar from "./sidebar";
 const Headers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <div
-      className="min-h-screen"
+      className="h-screen w-full flex overflow-hidden"
       style={{
         backgroundColor: "var(--bg-primary)",
         color: "var(--text-primary)",
       }}
     >
-      <div
-        className="min-h-screen flex"
-        style={{
-          backgroundColor: "var(--bg-primary)",
-          color: "var(--text-primary)",
-        }}
-      >
-        <Sidebar />
-        <div className="flex-1 flex flex-col">
+      <Sidebar />
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <div className="flex-shrink-0 z-10">
           <Navbar />
-          <div className="flex-1">{children}</div>
+        </div>
+        <div className="flex-1 overflow-y-auto overflow-x-hidden relative">
+          {children}
         </div>
       </div>
     </div>

@@ -1,0 +1,127 @@
+import axios from "axios";
+import { API_URL } from "./config";
+import Cookies from "js-cookie";
+
+export const createFolder = async (name: string, parentId?: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.post(
+      `${API_URL}/folders`,
+      { name, parentId },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error creating folder:", error);
+    throw error;
+  }
+};
+
+export const getFolderContents = async (folderId: string = "root", page: number = 1, limit: number = 10) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/folders/${folderId}?page=${page}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching folder contents:", error);
+    throw error;
+  }
+};
+
+export const deleteFolder = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/folders/${id}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting folder:", error);
+    throw error;
+  }
+};
+
+export const restoreFolder = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/restore`, {}, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error restoring folder:", error);
+    throw error;
+  }
+};
+
+export const renameFolderApi = async (id: string, name: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/rename`, { name }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error renaming folder:", error);
+    throw error;
+  }
+};
+
+export const moveFolderApi = async (id: string, parentId: string | null) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.put(`${API_URL}/folders/${id}/move`, { parentId }, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error moving folder:", error);
+    throw error;
+  }
+};
+export const deleteFolderPermanentlyApi = async (id: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.delete(`${API_URL}/folders/${id}/permanent`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting folder permanently:", error);
+    throw error;
+  }
+};
+
+export const downloadFolderApi = async (folderId: string) => {
+  try {
+    const token = Cookies.get("token");
+    const response = await axios.get(`${API_URL}/folders/${folderId}/download`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      responseType: "blob",
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error downloading folder:", error);
+    throw error;
+  }
+};

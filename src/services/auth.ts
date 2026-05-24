@@ -112,7 +112,7 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
             idToken: token
         });
         if (response.data.success) {
-            Cookies.set('token', response.data.accessToken, { expires: 15 });
+            Cookies.set('token', response.data.data.token, { expires: 15 });
         } else {
             toast.error(response.data.message);
         }
@@ -127,7 +127,33 @@ export const OAuthSignup = async (token: string, provider: 'google' | 'microsoft
                 );
                 return error.response;
             }
-            console.log(error);
+            toast.error("Server Error !");
+        }
+    }
+};
+
+export const OAuthSignin = async (token: string, provider: 'google' | 'microsoft') => {
+    try {
+        const response = await axios.post(`${API_URL}/auth/oauth/signin`, {
+            provider,
+            idToken: token
+        });
+        if (response.data.success) {
+            Cookies.set('token', response.data.data.token, { expires: 15 });
+        } else {
+            toast.error(response.data.message);
+        }
+        return response;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            if (error.response?.status !== undefined &&
+                error.response.status >= 400 &&
+                error.response.status < 500) {
+                toast.error(
+                    error.response?.data?.message || "Une erreur est survenue"
+                );
+                return error.response;
+            }
             toast.error("Server Error !");
         }
     }
@@ -151,7 +177,7 @@ export const ResetPassword = async (token: string, password: string, confirmPass
 export const ChangePassword = async (currentPassword: string, newPassword: string, confirmPassword: string) => {
     try {
         const token = Cookies.get('token');
-        const response = await axios.post(`${API_URL}/auth/change-password`, {
+        const response = await axios.put(`${API_URL}/auth/change-password`, {
             currentPassword,
             newPassword,
             confirmPassword
@@ -176,6 +202,26 @@ export const GetUser = async (id: string) => {
         return response.data;
     } catch (error) {
         console.error("Get user error", error);
+        return null;
+    }
+};
+
+export const UploadAvatar = async (file: File) => {
+    try {
+        const token = Cookies.get('token');
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await axios.put(`${API_URL}/auth/avatar`, formData, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'multipart/form-data',
+            }
+        });
+        return response.data;
+    } catch (error) {
+        if (axios.isAxiosError(error)) {
+            toast.error(error.response?.data?.message || "Avatar upload failed");
+        }
         return null;
     }
 };

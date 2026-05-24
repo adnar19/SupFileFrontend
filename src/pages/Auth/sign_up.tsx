@@ -45,21 +45,14 @@ const SignUp: React.FC = () => {
   const handleGoogleSignup = async () => {
     try {
       setSignupLoading(true);
-
       const user = await handleSignIn('google');
-
       const token = await user.getIdToken();
-      console.log(token);
-
       const response = await GoogleSignup(token);
-      console.log(response);
-
       if (response && response.data && response.data.success) {
         toast.success("Account created with Google!");
         navigate("/");
       }
     } catch (error) {
-      console.error(error);
       toast.error("Google registration failed");
     } finally {
       setSignupLoading(false);
@@ -72,11 +65,7 @@ const SignUp: React.FC = () => {
 
       const user = await handleSignIn('microsoft');
       const token = await user.getIdToken();
-      console.log(token);
-
       const response = await OAuthSignup(token, 'microsoft');
-      console.log(response);
-
       if (response && response.data && response.data.success) {
         toast.success("Account created with Microsoft!");
         navigate("/");

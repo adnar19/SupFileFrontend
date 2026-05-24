@@ -1,229 +1,334 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Grid3X3, List, Home, Star, Trash2, File, Folder, ChevronRight, Share2, BarChart3 } from 'lucide-react';
-
-interface FileItem {
-  id: string;
-  name: string;
-  type: 'folder' | 'file';
-  fileType?: string;
-  modified: string;
-  size: string;
-  icon: React.ReactNode;
-  isFavorite: boolean;
-}
+import React, { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getFileIcon, formatFileSize, getCustomFileType } from '../../utils/fileUtils';
+import { getFavoriteFiles, deleteFile, downloadFile, toggleFavoriteApi, renameFileApi } from '../../services/file';
+import { deleteFolder, renameFolderApi } from '../../services/folder';
+import { SyncLoader } from 'react-spinners';
+import { toast } from 'react-toastify';
+import Modal from '../../components/Modal';
+import { PreviewModal } from '../../components/PreviewModal';
+import { useFileSystem } from '../../contexts/FileSystemContext';
+import ViewToggle from '../../components/ViewToggle';
+import FileExplorer, { type FileItem } from '../../components/FileExplorer';
+import Breadcrumbs from '../../components/Breadcrumbs';
+import MoveModal from '../../components/MoveModal';
+import ShareModal from '../../components/ShareModal';
+import { moveFileApi } from '../../services/file';
+import { moveFolderApi } from '../../services/folder';
 
 const Favorites: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [items, setItems] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { setCurrentFolderId, setCurrentFolderName, refreshTrigger } = useFileSystem();
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    limit: 10
+  });
 
-  const favoriteFiles: FileItem[] = [
-    {
-      id: '1',
-      name: 'Projects',
-      type: 'folder',
-      fileType: 'Folder',
-      modified: '1 day ago',
-      size: '8.3 GB',
-      icon: <Folder className="w-5 h-5 text-purple-500" />,
-      isFavorite: true
-    },
-    {
-      id: '2',
-      name: 'presentation.pptx',
-      type: 'file',
-      fileType: 'PowerPoint',
-      modified: '1 day ago',
-      size: '15.7 MB',
-      icon: <File className="w-5 h-5 text-orange-500" />,
-      isFavorite: true
-    },
-    {
-      id: '3',
-      name: 'design.sketch',
-      type: 'file',
-      fileType: 'Sketch',
-      modified: '4 days ago',
-      size: '45.3 MB',
-      icon: <File className="w-5 h-5 text-purple-500" />,
-      isFavorite: true
-    },
-    {
-      id: '4',
-      name: 'contract.pdf',
-      type: 'file',
-      fileType: 'PDF',
-      modified: '1 week ago',
-      size: '3.2 MB',
-      icon: <File className="w-5 h-5 text-red-500" />,
-      isFavorite: true
-    },
-    {
-      id: '5',
-      name: 'portfolio-website',
-      type: 'folder',
-      fileType: 'Folder',
-      modified: '2 weeks ago',
-      size: '2.1 GB',
-      icon: <Folder className="w-5 h-5 text-blue-500" />,
-      isFavorite: true
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [itemToRename, setItemToRename] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [newName, setNewName] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [itemToPreview, setItemToPreview] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [itemToMove, setItemToMove] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+  const [isMoving, setIsMoving] = useState(false);
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [itemToShare, setItemToShare] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
+
+  const handleShareClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToShare({ id, name, type });
+    setIsShareModalOpen(true);
+  };
+
+  const fetchData = async (page: number = 1) => {
+    try {
+      setLoading(true);
+      const res = await getFavoriteFiles(page, pagination.limit);
+      if (res.success) {
+        const { folders, files } = res.data;
+
+        const folderItems: FileItem[] = folders.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: 'folder',
+          fileType: 'Folder',
+          modified: new Date(f.updatedAt).toLocaleDateString(),
+          size: '--',
+          icon: getFileIcon('folder', f.name),
+          isFavorite: true
+        }));
+
+        const fileItems: FileItem[] = files.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: 'file',
+          fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          modified: new Date(f.updatedAt).toLocaleDateString(),
+          size: formatFileSize(f.size),
+          icon: getFileIcon('file', f.name),
+          isFavorite: true
+        }));
+
+        setItems([...folderItems, ...fileItems]);
+        if (res.pagination) setPagination(res.pagination);
+      }
+    } catch (error) {
+      toast.error("Failed to fetch favorites");
+    } finally {
+      setLoading(false);
     }
-  ];
-
-
-  const toggleFavorite = (id: string) => {
-    console.log('Toggle favorite for item:', id);
-    // Toggle favorite logic here
   };
 
-  const handleShare = (id: string) => {
-    console.log('Share item:', id);
-    // Share logic here
+  useEffect(() => {
+    fetchData(pagination.currentPage);
+  }, [pagination.currentPage, refreshTrigger]);
+
+  useEffect(() => {
+    setCurrentFolderId(undefined);
+    setCurrentFolderName("Favorites");
+  }, []);
+
+  const handleItemClick = (item: FileItem) => {
+    if (item.type === 'file') {
+      setItemToPreview(item);
+      setIsPreviewModalOpen(true);
+    }
   };
 
-  const handleDelete = (id: string) => {
-    console.log('Delete item:', id);
-    // Delete logic here
+  const handleFavoriteToggle = async (id: string, type: 'file' | 'folder') => {
+    try {
+      await toggleFavoriteApi(id, type);
+      setItems(items.filter(item => item.id !== id));
+      toast.success("Removed from favorites");
+    } catch (error) {
+      toast.error("Failed to update favorite");
+    }
   };
 
+  const handleDownload = async (id: string, name: string) => {
+    try {
+      const blob = await downloadFile(id);
+      const url = window.URL.createObjectURL(new Blob([blob]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', name);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Download failed");
+    }
+  };
+
+  const handleRenameClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToRename({ id, name, type });
+    setNewName(name);
+    setIsRenameModalOpen(true);
+  };
+
+  const handleDeleteClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToDelete({ id, name, type });
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmRename = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!itemToRename || !newName.trim() || newName === itemToRename.name) return;
+
+    try {
+      setIsRenaming(true);
+      if (itemToRename.type === 'file') {
+        await renameFileApi(itemToRename.id, newName);
+      } else {
+        await renameFolderApi(itemToRename.id, newName);
+      }
+      toast.success("Renamed successfully");
+      fetchData(pagination.currentPage);
+      setIsRenameModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to rename");
+    } finally {
+      setIsRenaming(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return;
+    try {
+      setIsDeleting(true);
+      if (itemToDelete.type === 'file') {
+        await deleteFile(itemToDelete.id);
+      } else {
+        await deleteFolder(itemToDelete.id);
+      }
+      toast.success("Deleted successfully");
+      fetchData(pagination.currentPage);
+      setIsDeleteModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to delete");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleMoveClick = (id: string, name: string, type: 'file' | 'folder') => {
+    setItemToMove({ id, name, type });
+    setIsMoveModalOpen(true);
+  };
+
+  const confirmMove = async (targetFolderId: string | null) => {
+    if (!itemToMove) return;
+    try {
+      setIsMoving(true);
+      if (itemToMove.type === 'file') {
+        await moveFileApi(itemToMove.id, targetFolderId);
+      } else {
+        await moveFolderApi(itemToMove.id, targetFolderId);
+      }
+      toast.success("Moved successfully");
+      fetchData(pagination.currentPage);
+      setIsMoveModalOpen(false);
+    } catch (error) {
+      toast.error("Failed to move");
+    } finally {
+      setIsMoving(false);
+    }
+  };
 
   return (
-    <div className="min-h-full" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
-      <div className="min-h-full flex" style={{ backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto min-h-screen">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 space-y-4 sm:space-y-0">
+        <Breadcrumbs 
+          items={[]} 
+          onHomeClick={() => {}}
+          onItemClick={() => {}}
+          currentPageName="Favorites"
+        />
+        <ViewToggle viewMode={viewMode} onViewModeChange={setViewMode} />
+      </div>
 
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-32 space-y-4">
+          <SyncLoader color="#3b82f6" size={10} />
+          <p className="text-[var(--text-tertiary)] animate-pulse font-medium">Loading your favorites...</p>
+        </div>
+      ) : (
+        <FileExplorer 
+          items={items}
+          viewMode={viewMode}
+          activeMenuId={activeMenuId}
+          setActiveMenuId={setActiveMenuId}
+          onItemClick={handleItemClick}
+          onFavoriteToggle={handleFavoriteToggle}
+          onDownload={handleDownload}
+          onRename={handleRenameClick}
+          onDelete={handleDeleteClick}
+          onMove={handleMoveClick}
+          onShare={handleShareClick}
+        />
+      )}
 
-        {/* Main Content */}
-        <div className="flex-1 flex flex-col py-2">
-          <div className="flex items-center justify-between">
-            {/* Breadcrumb */}
-            <div className="px-6 py-3 flex items-center space-x-2 text-sm" style={{ color: 'var(--text-tertiary)' }}>
-              <Link to="/dashboard" className="cursor-pointer hover:opacity-80 transition-opacity">
-                <Home className="w-4 h-4" />
-              </Link>
-              <ChevronRight className="w-4 h-4" />
-              <Star className="w-4 h-4" />
-              <span style={{ color: 'var(--text-primary)' }}>Favorite Files</span>
-            </div>
+      {!loading && pagination.totalPages > 1 && (
+        <div className="mt-12 flex items-center justify-center space-x-2">
+          <button 
+            disabled={pagination.currentPage === 1}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage - 1 }))}
+            className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </button>
+          
+          {[...Array(pagination.totalPages)].map((_, i) => (
+            <button
+              key={i + 1}
+              onClick={() => setPagination(prev => ({ ...prev, currentPage: i + 1 }))}
+              className={`w-10 h-10 rounded-lg font-medium transition-all ${
+                pagination.currentPage === i + 1 
+                  ? 'bg-blue-500 text-white shadow-lg scale-105' 
+                  : 'bg-[var(--bg-secondary)] text-[var(--text-secondary)] border border-[var(--border-color)] hover:bg-[var(--bg-hover)]'
+              }`}
+            >
+              {i + 1}
+            </button>
+          ))}
 
-            {/* View Toggle */}
-            <div className="flex justify-end px-6">
-              <div className="flex items-center space-x-1 rounded-lg p-1" style={{ backgroundColor: 'var(--bg-tertiary)' }}>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded ${viewMode === 'list' ? 'shadow-sm' : ''}`}
-                  style={{ backgroundColor: viewMode === 'list' ? 'var(--card-bg)' : 'transparent' }}
-                >
-                  <List className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded ${viewMode === 'grid' ? 'shadow-sm' : ''}`}
-                  style={{ backgroundColor: viewMode === 'grid' ? 'var(--card-bg)' : 'transparent' }}
-                >
-                  <Grid3X3 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          </div>
+          <button 
+            disabled={pagination.currentPage === pagination.totalPages}
+            onClick={() => setPagination(prev => ({ ...prev, currentPage: prev.currentPage + 1 }))}
+            className="p-2 rounded-lg border border-[var(--border-color)] bg-[var(--bg-secondary)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
-
-          {/* Content Area */}
-          <div className="flex-1 p-6">
-
-
-            {/* Files/Folders */}
-            {viewMode === 'list' ? (
-              <div className="rounded-lg border" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b" style={{ borderColor: 'var(--border-color)' }}>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Name</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Type</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Size</th>
-                      <th className="text-left p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Modified</th>
-                      <th className="text-center p-4 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {favoriteFiles.map((file) => (
-                      <tr className="border-b transition-colors" style={{ borderColor: 'var(--border-color)' }}>
-                        <td className="p-4">
-                          <div className="flex items-center space-x-3">
-                            {file.icon}
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
-                          </div>
-                        </td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.fileType}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.size}</td>
-                        <td className="p-4 text-sm" style={{ color: 'var(--text-tertiary)' }}>{file.modified}</td>
-                        <td className="p-4">
-                          <div className="flex items-center justify-center space-x-2 pl-2">
-                            {/* Share */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleShare(file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <Share2 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            {/* Plot */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => console.log('Plot item:', file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <BarChart3 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            {/* Favorite */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => toggleFavorite(file.id)}
-                                className={`p-1.5 rounded transition-colors flex items-center justify-center ${file.isFavorite ? 'text-yellow-500' : ''
-                                  }`}
-                                style={{ color: file.isFavorite ? '#eab308' : 'var(--text-tertiary)' }}
-                              >
-                                <Star className="w-4 h-4" fill={file.isFavorite ? 'currentColor' : 'none'} />
-                              </button>
-                            </div>
-
-                            {/* Delete */}
-                            <div className="w-6 flex justify-center">
-                              <button
-                                onClick={() => handleDelete(file.id)}
-                                className="p-1.5 rounded transition-colors flex items-center justify-center"
-                                style={{ color: 'var(--text-tertiary)' }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                {favoriteFiles.map((file) => (
-                  <div key={file.id} className="rounded-lg border p-4 transition-colors cursor-pointer" style={{ backgroundColor: 'var(--card-bg)', borderColor: 'var(--border-color)' }}>
-                    <div className="flex flex-col items-center space-y-2">
-                      {file.icon}
-                      <span className="text-sm font-medium text-center" style={{ color: 'var(--text-primary)' }}>{file.name}</span>
-                      <span className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{file.size}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* Modals */}
+      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Delete Item">
+        <div className="p-4 text-center">
+          <p className="mb-6 text-[var(--text-secondary)]">
+            Are you sure you want to delete <span className="font-bold text-[var(--text-primary)]">{itemToDelete?.name}</span>?
+          </p>
+          <div className="flex justify-center space-x-3">
+            <button onClick={() => setIsDeleteModalOpen(false)} className="px-6 py-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">Cancel</button>
+            <button onClick={confirmDelete} disabled={isDeleting} className="px-6 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 disabled:opacity-50">
+              {isDeleting ? "Deleting..." : "Delete"}
+            </button>
           </div>
         </div>
-      </div>
+      </Modal>
+
+      <Modal isOpen={isRenameModalOpen} onClose={() => setIsRenameModalOpen(false)} title="Rename Item">
+        <form onSubmit={confirmRename} className="p-4 space-y-4">
+          <input 
+            type="text" 
+            value={newName} 
+            onChange={(e) => setNewName(e.target.value)}
+            className="w-full px-4 py-3 rounded-xl bg-[var(--bg-tertiary)] border border-[var(--border-color)] text-[var(--text-primary)] outline-none focus:border-blue-500 transition-all"
+            autoFocus
+          />
+          <div className="flex justify-end space-x-3">
+            <button type="button" onClick={() => setIsRenameModalOpen(false)} className="px-6 py-2 rounded-xl text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">Cancel</button>
+            <button type="submit" disabled={isRenaming} className="px-6 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50">
+              {isRenaming ? "Renaming..." : "Rename"}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <PreviewModal isOpen={isPreviewModalOpen} onClose={() => setIsPreviewModalOpen(false)} file={itemToPreview} />
+
+      <MoveModal 
+        isOpen={isMoveModalOpen} 
+        onClose={() => setIsMoveModalOpen(false)} 
+        onConfirm={confirmMove}
+        itemName={itemToMove?.name || ""}
+        isMoving={isMoving}
+      />
+
+      {itemToShare && (
+        <ShareModal
+          isOpen={isShareModalOpen}
+          onClose={() => setIsShareModalOpen(false)}
+          itemId={itemToShare.id}
+          itemName={itemToShare.name}
+          itemType={itemToShare.type}
+        />
+      )}
     </div>
   );
 };
