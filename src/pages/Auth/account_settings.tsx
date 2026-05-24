@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Mail, Lock, AlertTriangle, User, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../contexts/ThemeContext';
-import { ChangePassword, UpdateProfile } from '../../services/auth';
+import { ChangePassword, UpdateProfile, UploadAvatar } from '../../services/auth';
 import { toast } from 'react-toastify';
 import useAuth from '../../hooks/useAuth';
 
@@ -40,18 +40,21 @@ const AccountSettings: React.FC = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB");
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => setAvatarPreview(reader.result as string);
+    reader.readAsDataURL(file);
+
+    const data = await UploadAvatar(file);
+    if (data?.success) {
+      toast.success("Avatar updated successfully");
+      refreshUser();
     }
   };
 
