@@ -18,6 +18,7 @@ interface PreviewModalProps {
 
 export const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, file }) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [textContent, setTextContent] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,17 +29,26 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, fil
       const fetchFileContent = async () => {
         setLoading(true);
         setError(null);
+        setTextContent(null);
         try {
           const token = Cookies.get('token');
+          const ext = file.name.split('.').pop()?.toLowerCase();
+          const isTextFile = ['txt', 'md'].includes(ext || '');
+
           const response = await axios.get(`${API_URL}/files/download/${file.id}`, {
             responseType: 'blob',
             headers: {
               Authorization: `Bearer ${token}`
             }
           });
-          
-          url = URL.createObjectURL(response.data);
-          setBlobUrl(url);
+
+          if (isTextFile) {
+            const text = await response.data.text();
+            setTextContent(text);
+          } else {
+            url = URL.createObjectURL(response.data);
+            setBlobUrl(url);
+          }
         } catch (err) {
           console.error("Error fetching file for preview:", err);
           setError("Failed to load preview");
@@ -55,6 +65,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, fil
         URL.revokeObjectURL(url);
       }
       setBlobUrl(null);
+      setTextContent(null);
     };
   }, [isOpen, file, API_URL]);
 
@@ -67,6 +78,7 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, fil
   const isVideo = ['mp4', 'webm', 'ogg'].includes(extension || '');
   const isAudio = ['mp3', 'wav', 'ogg'].includes(extension || '');
   const isPdf = extension === 'pdf';
+  const isText = ['txt', 'md'].includes(extension || '');
 
   const renderContent = () => {
     if (loading) {
@@ -89,6 +101,17 @@ export const PreviewModal: React.FC<PreviewModalProps> = ({ isOpen, onClose, fil
           >
             Go back
           </button>
+        </div>
+      );
+    }
+
+    if (isText) {
+      if (!textContent) return null;
+      return (
+        <div className="w-full h-[65vh] overflow-auto bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-color)] p-5">
+          <pre className="text-sm text-[var(--text-primary)] whitespace-pre-wrap font-mono leading-relaxed">
+            {textContent}
+          </pre>
         </div>
       );
     }
