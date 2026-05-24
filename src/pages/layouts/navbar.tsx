@@ -413,6 +413,21 @@ const Navbar: React.FC = () => {
                   : "Supports all file types"}
               </p>
             </div>
+            {selectedFile && !isUploading && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="text-xs text-blue-500 hover:text-blue-600 underline transition-colors"
+              >
+                Change file
+              </button>
+            )}
             <input
               type="file"
               ref={fileInputRef}
