@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Link, Copy, Check, Trash2, Lock, Calendar, Users, 
-  UserMinus, Shield, Plus, Globe, Key, RefreshCw, AlertTriangle 
+  Link, Copy, Check, Trash2, Lock, Calendar, Users,
+  UserMinus, Plus, Globe, Key, RefreshCw, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import Modal from './Modal';

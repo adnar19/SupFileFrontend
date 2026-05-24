@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
 import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import { toast } from "react-toastify";
-import { Signin, GoogleSignup, OAuthSignup } from "../../services/auth"
+import { Signin, OAuthSignin } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
 import { handleSignIn } from "../../services/firebase";
 import useAuth from "../../hooks/useAuth";
@@ -46,11 +46,9 @@ const Login: React.FC = () => {
       const user = await handleSignIn('google');
       const token = await user.getIdToken();
       
-      const response = await GoogleSignup(token);
-      
+      const response = await OAuthSignin(token, 'google');
+
       if (response && response.data && response.data.success) {
-        Cookies.set("token", response.data.accessToken, { expires: 15 });
-        // Update auth token state
         setToken(Cookies.get('token'));
         toast.success('Welcome');
         navigate('/dashboard');
@@ -69,11 +67,9 @@ const Login: React.FC = () => {
       const user = await handleSignIn('microsoft');
       const token = await user.getIdToken();
       
-      const response = await OAuthSignup(token, 'microsoft');
-      
+      const response = await OAuthSignin(token, 'microsoft');
+
       if (response && response.data && response.data.success) {
-        Cookies.set("token", response.data.accessToken, { expires: 15 });
-        // Update auth token state
         setToken(Cookies.get('token'));
         toast.success('Welcome');
         navigate('/dashboard');

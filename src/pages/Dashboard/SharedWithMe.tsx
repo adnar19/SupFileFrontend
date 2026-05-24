@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download, Trash2, Link as LinkIcon, Users, X, AlertTriangle, Eye, Lock, Clock, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download, Trash2, Link as LinkIcon, Users, X, AlertTriangle, Eye, Lock, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   getSharedWithMe, 
   getMyPublicLinks, 
@@ -13,7 +13,7 @@ import {
 } from '../../services/sharing';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { formatFileSize, getCustomFileType, getFileCategory } from '../../utils/fileUtils';
+import { formatFileSize } from '../../utils/fileUtils';
 import { downloadFile } from '../../services/file';
 import { downloadFolderApi } from '../../services/folder';
 import Cookies from 'js-cookie';
@@ -29,10 +29,6 @@ const SharedWithMe: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<{ id: string, name: string, type: 'file' | 'folder' } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingCollabs, setLoadingCollabs] = useState(false);
-
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchType, setSearchType] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -331,7 +327,7 @@ const SharedWithMe: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-color)]">
-              {getFilteredItems().slice((currentPage - 1) * limit, currentPage * limit).map((item: SharedItem, index: number) => (
+              {(getFilteredItems() as SharedItem[]).slice((currentPage - 1) * limit, currentPage * limit).map((item: SharedItem, index: number) => (
               <tr key={index} className="hover:bg-[var(--bg-hover)] transition-all group cursor-default">
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-3">
@@ -428,7 +424,7 @@ const SharedWithMe: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
-              {getFilteredItems().slice((currentPage - 1) * limit, currentPage * limit).map((link: MyPublicLink, idx: number) => (
+              {(getFilteredItems() as MyPublicLink[]).slice((currentPage - 1) * limit, currentPage * limit).map((link: MyPublicLink, idx: number) => (
                 <tr key={idx} className="hover:bg-[var(--bg-hover)] transition-all group">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
