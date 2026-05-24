@@ -4,6 +4,7 @@ import {
   getFileIcon,
   formatFileSize,
   getCustomFileType,
+  getFileCategory,
 } from "../../utils/fileUtils";
 import {
   getFolderContents,
@@ -18,6 +19,7 @@ import {
   toggleFavoriteApi,
   renameFileApi,
   searchFilesAndFolders,
+  moveFileApi,
 } from "../../services/file";
 import { useFileSystem } from "../../contexts/FileSystemContext";
 import { SyncLoader } from "react-spinners";
@@ -29,11 +31,11 @@ import ViewToggle from "../../components/ViewToggle";
 import FileExplorer, { type FileItem } from "../../components/FileExplorer";
 import MoveModal from "../../components/MoveModal";
 import ShareModal from "../../components/ShareModal";
-import { moveFileApi } from "../../services/file";
 
 const MyDrive: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [items, setItems] = useState<FileItem[]>([]);
+  const [allItems, setAllItems] = useState<FileItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [breadcrumbs, setBreadcrumbs] = useState<
     { id: string; name: string }[]
@@ -149,6 +151,8 @@ const MyDrive: React.FC = () => {
           name: f.name,
           type: "file",
           fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          fileDate: f.createdAt,
           modified: new Date(f.createdAt).toLocaleDateString(),
           size: formatFileSize(f.size),
           icon: getFileIcon("file", f.name),
@@ -172,6 +176,8 @@ const MyDrive: React.FC = () => {
         
         setBreadcrumbs(finalBreadcrumbs);
         if (res.pagination) setPagination(res.pagination);
+        // reset cached allItems when folder contents change
+        setAllItems(null);
       }
     } catch (error) {
       toast.error("Failed to fetch files");
@@ -180,15 +186,58 @@ const MyDrive: React.FC = () => {
     }
   };
 
+  const fetchAllFolderContents = async () => {
+    try {
+      setIsSearching(true);
+      const total = pagination.totalItems && pagination.totalItems > 0 ? pagination.totalItems : 1000;
+      const res = await getFolderContents(currentFolderId || 'root', 1, total);
+      if (res.success) {
+        const { folders, files } = res.data;
+        const folderItems: FileItem[] = (folders || []).map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: "folder",
+          fileType: "Folder",
+          modified: new Date(f.updatedAt).toLocaleDateString(),
+          size: "--",
+          icon: getFileIcon("folder", f.name),
+          isFavorite: f.isFavorite || false,
+        }));
+
+        const fileItems: FileItem[] = (files || []).map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: "file",
+          fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          fileDate: f.updatedAt || f.createdAt,
+          modified: new Date(f.createdAt).toLocaleDateString(),
+          size: formatFileSize(f.size),
+          icon: getFileIcon("file", f.name),
+          isFavorite: f.isFavorite || false,
+        }));
+
+        setAllItems([...folderItems, ...fileItems]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch all folder contents', err);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   useEffect(() => {
     fetchData(pagination.currentPage);
   }, [currentFolderId, refreshTrigger, pagination.currentPage]);
 
   useEffect(() => {
-    const hasFilters = searchQuery.trim() || searchType || searchDateFrom;
-    setIsFilterActive(!!hasFilters);
+    const hasSearchQuery = searchQuery.trim() !== "";
+    const hasOtherFilters = !!(searchType || searchDateFrom);
+    setIsFilterActive(hasSearchQuery || hasOtherFilters);
 
-    if (!hasFilters) {
+    // Only trigger global search if there is a query string
+    // Otherwise, we will apply filters (type, date) locally to the current folder items
+    if (!hasSearchQuery) {
       setSearchResults({ files: [], folders: [] });
       setIsSearching(false);
       return;
@@ -198,13 +247,23 @@ const MyDrive: React.FC = () => {
     const delayDebounceFn = setTimeout(async () => {
       try {
         const results = await searchFilesAndFolders(
-          searchQuery || "*",
+          searchQuery.trim(),
           50,
           searchType || undefined,
           searchDateFrom || undefined,
         );
         if (results && results.success) {
-          setSearchResults(results.data);
+          // If we're inside a folder, scope search results to that folder
+          if (currentFolderId) {
+            const scopedFiles = (results.data.files || []).filter((f: any) => f.folderId === currentFolderId);
+            const scopedFolders = (results.data.folders || []).filter((d: any) => d.parentId === currentFolderId);
+            setSearchResults({ files: scopedFiles, folders: scopedFolders });
+          } else {
+            // At root, include items whose folderId is null (top-level)
+            const scopedFiles = (results.data.files || []).filter((f: any) => !f.folderId);
+            const scopedFolders = (results.data.folders || []).filter((d: any) => !d.parentId);
+            setSearchResults({ files: scopedFiles, folders: scopedFolders });
+          }
         }
       } catch (err) {
         console.error("Search failed:", err);
@@ -224,6 +283,15 @@ const MyDrive: React.FC = () => {
     }
   }, [activeMenuId]);
 
+  useEffect(() => {
+    // when user applies type/date filters (without search query), prefetch all items for accurate filtering
+    const hasSearchQuery = searchQuery.trim() !== "";
+    const hasOtherFilters = !!(searchType || searchDateFrom);
+    if (!hasSearchQuery && hasOtherFilters) {
+      fetchAllFolderContents();
+    }
+  }, [searchType, searchDateFrom, currentFolderId]);
+
   const clearFilters = () => {
     setSearchQuery("");
     setSearchType("");
@@ -232,9 +300,17 @@ const MyDrive: React.FC = () => {
   };
 
   const getDisplayItems = (): FileItem[] => {
-    if (isFilterActive && !isSearching) {
-      const folderItems: FileItem[] = (searchResults.folders || []).map(
-        (f: any) => ({
+    let displayItems: FileItem[] = [];
+
+    // 1. Determine source: If a search keyword is present, use global search results.
+    // Otherwise, use the current folder's contents.
+    if (searchQuery.trim() && !isSearching) {
+      // If we cached the full folder contents, filter locally by name for complete results
+      if (allItems && allItems.length > 0) {
+        const term = searchQuery.trim().toLowerCase();
+        displayItems = allItems.filter((it) => it.name.toLowerCase().includes(term));
+      } else {
+        const folderItems: FileItem[] = (searchResults.folders || []).map((f: any) => ({
           id: f.id,
           name: f.name,
           type: "folder" as const,
@@ -243,25 +319,59 @@ const MyDrive: React.FC = () => {
           size: "--",
           icon: getFileIcon("folder", f.name),
           isFavorite: f.isFavorite || false,
-        }),
-      );
+        }));
 
-      const fileItems: FileItem[] = (searchResults.files || []).map(
-        (f: any) => ({
+        const fileItems: FileItem[] = (searchResults.files || []).map((f: any) => ({
           id: f.id,
           name: f.name,
           type: "file" as const,
           fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          fileDate: f.createdAt,
           modified: new Date(f.createdAt).toLocaleDateString(),
           size: formatFileSize(f.size),
           icon: getFileIcon("file", f.name),
           isFavorite: f.isFavorite || false,
-        }),
-      );
-
-      return [...folderItems, ...fileItems];
+        }));
+        displayItems = [...folderItems, ...fileItems];
+      }
+    } else {
+      displayItems = items;
     }
-    return items;
+
+    // 2. Filter by Type: Apply local category filtering using the strings returned by getCustomFileType
+    if (searchType || searchDateFrom) {
+      const base = (!searchQuery.trim() && allItems) ? allItems : displayItems;
+      displayItems = base.filter((item) => {
+        if (item.type === "folder") return false;
+
+        const category = getFileCategory((item as any).fileMime, item.name);
+        switch (searchType) {
+          case "image":
+            return category === 'image';
+          case "video":
+            return category === 'video';
+          case "audio":
+            return category === 'audio';
+          case "document":
+            return category === 'document';
+          case "other":
+            return category === 'other';
+          default:
+            return true;
+        }
+      });
+
+      if (searchDateFrom) {
+        const from = new Date(searchDateFrom);
+        displayItems = displayItems.filter((item) => {
+          const d = (item as any).fileDate ? new Date((item as any).fileDate) : new Date();
+          return d >= from;
+        });
+      }
+    }
+
+    return displayItems;
   };
 
   const handleItemClick = (item: FileItem) => {
@@ -292,7 +402,7 @@ const MyDrive: React.FC = () => {
   const handleDownload = async (id: string, name: string, type?: "file" | "folder") => {
     try {
       const displayItems = getDisplayItems();
-      const itemType = type || displayItems.find(i => i.id === id)?.type || "file";
+      const itemType = type || displayItems.find((i: FileItem) => i.id === id)?.type || "file";
       
       toast.info(`Preparing download for ${name}...`);
       
@@ -425,7 +535,7 @@ const MyDrive: React.FC = () => {
             setCurrentFolderName(undefined);
             setPagination((prev) => ({ ...prev, currentPage: 1 }));
           }}
-          onItemClick={(id) => {
+          onItemClick={(id: string) => {
             if (id === "root") {
               setCurrentFolderId(undefined);
               setCurrentFolderName(undefined);
@@ -516,10 +626,10 @@ const MyDrive: React.FC = () => {
               >
                 <option value="">All types</option>
                 <option value="image">Images</option>
-                <option value="video">Videos</option>
+                <option value="video">Vidéos</option>
                 <option value="audio">Audio</option>
                 <option value="document">Documents</option>
-                <option value="other">Other</option>
+                <option value="other">Autres</option>
               </select>
             </div>
 
@@ -595,7 +705,7 @@ const MyDrive: React.FC = () => {
               >
                 Filtering results
                 {searchQuery && <span> for "{searchQuery}"</span>}
-                {searchType && <span> • Type: {searchType}</span>}
+                {searchType && <span> • Type: {searchType === 'image' ? 'Images' : searchType === 'video' ? 'Vidéos' : searchType === 'document' ? 'Documents' : searchType === 'audio' ? 'Audio' : 'Autres'}</span>}
                 {searchDateFrom && (
                   <span>
                     {" "}

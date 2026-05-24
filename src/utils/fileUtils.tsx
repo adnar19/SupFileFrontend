@@ -50,3 +50,21 @@ export const getCustomFileType = (mimeType: string, name: string) => {
   
   return customType;
 };
+
+// Returns category keys: 'image' | 'video' | 'document' | 'audio' | 'other'
+export const getFileCategory = (mimeType: string | undefined, name: string) => {
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  const mt = (mimeType || '').toLowerCase();
+
+  const imageExt = ['jpg','jpeg','png','gif','webp','svg','bmp','heic','tiff'];
+  const videoExt = ['mp4','mov','webm','mkv','avi','flv','wmv'];
+  const audioExt = ['mp3','wav','ogg','flac','m4a','aac'];
+  const documentExt = ['pdf','doc','docx','xls','xlsx','ppt','pptx','txt','odt','ods','odp'];
+
+  if (mt.startsWith('image/') || imageExt.includes(ext)) return 'image';
+  if (mt.startsWith('video/') || videoExt.includes(ext)) return 'video';
+  if (mt.startsWith('audio/') || audioExt.includes(ext)) return 'audio';
+  if (mt === 'application/pdf' || documentExt.includes(ext) || mt.startsWith('application/')) return 'document';
+
+  return 'other';
+};

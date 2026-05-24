@@ -4,6 +4,7 @@ import {
   getFileIcon,
   formatFileSize,
   getCustomFileType,
+  getFileCategory,
 } from "../../utils/fileUtils";
 import {
   getUserFiles,
@@ -29,6 +30,7 @@ import { moveFileApi } from "../../services/file";
 const AllFiles: React.FC = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [items, setItems] = useState<FileItem[]>([]);
+  const [allItems, setAllItems] = useState<FileItem[] | null>(null);
   const [loading, setLoading] = useState(true);
   const { setCurrentFolderId, setCurrentFolderName, refreshTrigger } =
     useFileSystem();
@@ -36,7 +38,7 @@ const AllFiles: React.FC = () => {
     currentPage: 1,
     totalPages: 1,
     totalItems: 0,
-    limit: 20,
+    limit: 10,
   });
 
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
@@ -105,7 +107,9 @@ const AllFiles: React.FC = () => {
           name: f.name,
           type: "file",
           fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
           modified: new Date(f.updatedAt).toLocaleDateString(),
+          fileDate: f.updatedAt || f.createdAt,
           size: formatFileSize(f.size),
           icon: getFileIcon("file", f.name),
           isFavorite: f.isFavorite || false,
@@ -113,11 +117,41 @@ const AllFiles: React.FC = () => {
 
         setItems(fileItems);
         setPagination(res.pagination);
+        // reset cached allItems when page data changes
+        setAllItems(null);
       }
     } catch (error) {
       toast.error("Failed to fetch files");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllItems = async () => {
+    try {
+      setIsSearching(true);
+      // determine total items from pagination if present
+      const total = pagination.totalItems && pagination.totalItems > 0 ? pagination.totalItems : 1000;
+      const res = await getUserFiles(1, total);
+      if (res.success) {
+        const fileItems: FileItem[] = res.data.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: "file",
+          fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          fileDate: f.updatedAt || f.createdAt,
+          modified: new Date(f.updatedAt).toLocaleDateString(),
+          size: formatFileSize(f.size),
+          icon: getFileIcon("file", f.name),
+          isFavorite: f.isFavorite || false,
+        }));
+        setAllItems(fileItems);
+      }
+    } catch (err) {
+      console.error("Failed to fetch all items:", err);
+    } finally {
+      setIsSearching(false);
     }
   };
 
@@ -131,36 +165,46 @@ const AllFiles: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const hasFilters = searchQuery.trim() || searchType || searchDateFrom;
-    setIsFilterActive(!!hasFilters);
+    // Consider filters active when any control has a value (for UI state)
+    const hasFilters = !!(searchQuery.trim() || searchType || searchDateFrom);
+    setIsFilterActive(hasFilters);
 
-    if (!hasFilters) {
+    // Only perform server-side search when the user typed a query.
+    if (!searchQuery.trim()) {
       setSearchResults([]);
       setIsSearching(false);
-      return;
-    }
-
-    setIsSearching(true);
-    const delayDebounceFn = setTimeout(async () => {
-      try {
-        const results = await searchFilesAndFolders(
-          searchQuery || "*",
-          50,
-          searchType || undefined,
-          searchDateFrom || undefined,
-        );
-        if (results && results.success) {
-          setSearchResults(results.data.files || []);
+    } else {
+      setIsSearching(true);
+      const delayDebounceFn = setTimeout(async () => {
+        try {
+          const results = await searchFilesAndFolders(
+            searchQuery.trim(),
+            50,
+            searchType || undefined,
+            searchDateFrom || undefined,
+          );
+          if (results && results.success) {
+            setSearchResults(results.data.files || []);
+          }
+        } catch (err) {
+          console.error("Search failed:", err);
+        } finally {
+          setIsSearching(false);
         }
-      } catch (err) {
-        console.error("Search failed:", err);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
+      }, 300);
 
-    return () => clearTimeout(delayDebounceFn);
+      return () => clearTimeout(delayDebounceFn);
+    }
   }, [searchQuery, searchType, searchDateFrom]);
+
+  useEffect(() => {
+    // when user applies type/date filters (without search query), prefetch all items for accurate filtering
+    const hasSearchQuery = searchQuery.trim() !== "";
+    const hasOtherFilters = !!(searchType || searchDateFrom);
+    if (!hasSearchQuery && hasOtherFilters) {
+      fetchAllItems();
+    }
+  }, [searchType, searchDateFrom]);
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -170,19 +214,64 @@ const AllFiles: React.FC = () => {
   };
 
   const getDisplayItems = (): FileItem[] => {
-    if (isFilterActive && !isSearching) {
-      return searchResults.map((f: any) => ({
-        id: f.id,
-        name: f.name,
-        type: "file" as const,
-        fileType: getCustomFileType(f.mimeType, f.name),
-        modified: new Date(f.updatedAt ?? f.createdAt).toLocaleDateString(),
-        size: formatFileSize(f.size),
-        icon: getFileIcon("file", f.name),
-        isFavorite: f.isFavorite || false,
-      }));
+    let displayItems: FileItem[] = [];
+
+    // If there's an actual search query, show server search results when available.
+    if (searchQuery.trim() && !isSearching) {
+      // If we have a cached full list, prefer filtering it locally by the search term
+      if (allItems && allItems.length > 0) {
+        const term = searchQuery.trim().toLowerCase();
+        displayItems = allItems.filter((it) => it.name.toLowerCase().includes(term));
+      } else {
+        displayItems = searchResults.map((f: any) => ({
+          id: f.id,
+          name: f.name,
+          type: "file" as const,
+          fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
+          fileDate: f.updatedAt ?? f.createdAt,
+          modified: new Date(f.updatedAt ?? f.createdAt).toLocaleDateString(),
+          size: formatFileSize(f.size),
+          icon: getFileIcon("file", f.name),
+          isFavorite: f.isFavorite || false,
+        }));
+      }
+    } else {
+      displayItems = items;
     }
-    return items;
+
+    if (searchType || searchDateFrom) {
+      // if we have a cached full list (allItems), use it as the base for filtering
+      const base = (!searchQuery.trim() && allItems) ? allItems : displayItems;
+      displayItems = base.filter((item) => {
+        if (item.type === 'folder') return false;
+        const category = getFileCategory((item as any).fileMime, item.name);
+        switch (searchType) {
+          case 'image':
+            return category === 'image';
+          case 'video':
+            return category === 'video';
+          case 'audio':
+            return category === 'audio';
+          case 'document':
+            return category === 'document';
+          case 'other':
+            return category === 'other';
+          default:
+            return true;
+        }
+      });
+      // then apply date filter if present
+      if (searchDateFrom) {
+        const from = new Date(searchDateFrom);
+        displayItems = displayItems.filter((item) => {
+          const d = (item as any).fileDate ? new Date((item as any).fileDate) : new Date();
+          return d >= from;
+        });
+      }
+    }
+
+    return displayItems;
   };
 
   const handleItemClick = (item: FileItem) => {
@@ -470,7 +559,7 @@ const AllFiles: React.FC = () => {
               >
                 Filtering files
                 {searchQuery && <span> for "{searchQuery}"</span>}
-                {searchType && <span> • Type: {searchType}</span>}
+                {searchType && <span> • Type: {searchType === 'image' ? 'Images' : searchType === 'video' ? 'Vidéos' : searchType === 'document' ? 'Documents' : searchType === 'audio' ? 'Audio' : 'Autres'}</span>}
                 {searchDateFrom && (
                   <span>
                     {" "}

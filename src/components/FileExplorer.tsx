@@ -9,6 +9,8 @@ export interface FileItem {
   name: string;
   type: 'folder' | 'file';
   fileType?: string;
+  fileMime?: string;
+  fileDate?: string;
   modified: string;
   size: string;
   icon: React.ReactNode;

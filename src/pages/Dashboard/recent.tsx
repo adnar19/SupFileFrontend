@@ -55,6 +55,7 @@ const Recent: React.FC = () => {
           name: f.name,
           type: 'file',
           fileType: getCustomFileType(f.mimeType, f.name),
+          fileMime: f.mimeType,
           modified: new Date(f.updatedAt).toLocaleDateString(),
           size: formatFileSize(f.size),
           icon: getFileIcon('file', f.name),

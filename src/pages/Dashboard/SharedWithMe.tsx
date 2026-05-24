@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download, Trash2, Link as LinkIcon, Users, X, AlertTriangle, Eye, Lock, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download, Trash2, Link as LinkIcon, Users, X, AlertTriangle, Eye, Lock, Clock, ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { 
   getSharedWithMe, 
   getMyPublicLinks, 
@@ -13,7 +13,7 @@ import {
 } from '../../services/sharing';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
-import { formatFileSize } from '../../utils/fileUtils';
+import { formatFileSize, getCustomFileType, getFileCategory } from '../../utils/fileUtils';
 import { downloadFile } from '../../services/file';
 import { downloadFolderApi } from '../../services/folder';
 import Cookies from 'js-cookie';
@@ -29,6 +29,10 @@ const SharedWithMe: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<{ id: string, name: string, type: 'file' | 'folder' } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingCollabs, setLoadingCollabs] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -227,6 +231,11 @@ const SharedWithMe: React.FC = () => {
     setIsConfirmModalOpen(true);
   };
 
+  // No search/filters in SharedWithMe — return the raw list for current tab
+  const getFilteredItems = () => {
+    return activeTab === 'received' ? sharedItems : publicLinks;
+  };
+
   useEffect(() => {
     if (activeTab === 'received') {
       fetchSharedItems();
@@ -291,6 +300,8 @@ const SharedWithMe: React.FC = () => {
         </button>
       </div>
 
+      {/* Search and filters are disabled on this page (available only in My Drive and All Files) */}
+
       {activeTab === 'received' && sharedItems.length === 0 ? (
         <div className="text-center py-12 bg-[var(--bg-secondary)] rounded-2xl border border-dashed border-[var(--border-color)]">
           <User className="w-12 h-12 text-[var(--text-tertiary)] mx-auto mb-4 opacity-50" />
@@ -311,7 +322,7 @@ const SharedWithMe: React.FC = () => {
             <>
           <thead>
             <tr className="border-b border-[var(--border-color)] bg-[var(--bg-tertiary)]/30">
-              <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Name</th>
+                <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Name</th>
               <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Size</th>
               <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Shared By</th>
               <th className="px-6 py-4 text-xs font-semibold text-[var(--text-tertiary)] uppercase tracking-wider">Date Shared</th>
@@ -320,7 +331,7 @@ const SharedWithMe: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-color)]">
-            {sharedItems.slice((currentPage - 1) * limit, currentPage * limit).map((item: SharedItem, index) => (
+              {getFilteredItems().slice((currentPage - 1) * limit, currentPage * limit).map((item: SharedItem, index: number) => (
               <tr key={index} className="hover:bg-[var(--bg-hover)] transition-all group cursor-default">
                 <td className="px-6 py-4">
                   <div className="flex items-center space-x-3">
@@ -417,7 +428,7 @@ const SharedWithMe: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-color)]">
-              {publicLinks.slice((currentPage - 1) * limit, currentPage * limit).map((link, idx) => (
+              {getFilteredItems().slice((currentPage - 1) * limit, currentPage * limit).map((link: MyPublicLink, idx: number) => (
                 <tr key={idx} className="hover:bg-[var(--bg-hover)] transition-all group">
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
