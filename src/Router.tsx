@@ -13,6 +13,7 @@ import Trash from "./pages/Dashboard/trash";
 import AccountSettings from "./pages/Auth/account_settings";
 import VerifyEmail from "./pages/Auth/verify-email";
 import ForgotPasswordPage from "./pages/Auth/forgot-password";
+import ResetPasswordPage from "./pages/Auth/reset-password";
 import PublicShare from "./pages/PublicShare";
 import SharedWithMe from "./pages/Dashboard/SharedWithMe";
 
@@ -24,6 +25,7 @@ const AppRouter: React.FC = () => {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         <Route path="/" element={<PrivateRoute />}>
           <Route index element={<Dashboard />} />
           <Route path="/dashboard" element={<Dashboard />} />

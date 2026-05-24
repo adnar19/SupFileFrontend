@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FolderPlus, LogOut, Moon, Sun, Upload, User, File as FileIcon, X as CloseIcon } from "lucide-react";
+import { FolderPlus, LogOut, Moon, Sun, Upload, User, File as FileIcon } from "lucide-react";
 import { useTheme } from "../../contexts/ThemeContext";
 import { Logout } from "../../services/auth";
 import useAuth from "../../hooks/useAuth";
@@ -82,7 +82,7 @@ const Navbar: React.FC = () => {
     if (!newFolderName || newFolderName.trim() === "") return;
 
     const isDrivePage = location.pathname === "/my-drive" || location.pathname.startsWith("/folder/");
-    const parentId = isDrivePage ? (currentFolderId || "root") : "root";
+    const parentId = isDrivePage ? (currentFolderId || 'root') : 'root';
 
     try {
       setIsCreating(true);
