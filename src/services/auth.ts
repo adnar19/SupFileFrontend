@@ -137,7 +137,7 @@ export const OAuthSignin = async (token: string, provider: 'google' | 'microsoft
         const response = await axios.post(`${API_URL}/auth/oauth/signin`, {
             provider,
             idToken: token
-        }, { withCredentials: true });
+        });
         if (response.data.success) {
             Cookies.set('token', response.data.data.token, { expires: 15 });
         } else {

@@ -4,8 +4,10 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { ChangePassword, UpdateProfile } from '../../services/auth';
 import { toast } from 'react-toastify';
 import useAuth from '../../hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 const AccountSettings: React.FC = () => {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { user, refreshUser } = useAuth();
   const [name, setName] = useState("");
@@ -131,7 +133,7 @@ const AccountSettings: React.FC = () => {
     if (deleteConfirmation === "DELETE MY ACCOUNT") {
       setIsDeleting(true);
       setTimeout(() => {
-        window.location.href = "/register";
+        navigate('/register');
       }, 2000);
     }
   };
