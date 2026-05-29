@@ -1,89 +1,103 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { GoogleIcon } from "../../components/GoogleIcon";
-import useAuth from "../../hooks/useAuth";
+import { MicrosoftIcon } from "../../components/MicrosoftIcon";
 import { toast } from "react-toastify";
-import { Signup, GoogleSignup } from "../../services/auth";
+import { Signin, OAuthSignin } from "../../services/auth"
 import { SyncLoader } from "react-spinners";
-import { signInWithPopup } from "firebase/auth";
-import { auth, googleProvider } from "../../services/firebase";
+import { handleSignIn } from "../../services/firebase";
+import useAuth from "../../hooks/useAuth";
+import Cookies from "js-cookie";
 
-const SignUp: React.FC = () => {
-  const { isAuthenticated, loading } = useAuth();
-  const [fullName, setFullName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [confirmPassword, setConfirmPassword] = useState<string>("");
-  const [signupLoading, setSignupLoading] = useState<boolean>(false);
+const Login: React.FC = () => {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loginLoading, setLoginLoading] = useState<boolean>(false);
   const navigate = useNavigate();
+  const { setToken } = useAuth();
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
-    if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
-      return;
-    }
-
     try {
-      setSignupLoading(true);
-      await Signup(fullName, email, password);
+      setLoginLoading(true);
+      const res = await Signin(email, password);
+      
+      if (res && res.data && res.data.success) {
+        toast.success('Welcome');
+        // Update auth token state after cookie is set
+        setToken(Cookies.get('token'));
+        navigate('/dashboard');
+      } else {
+        const message = (res?.data?.message || "").toLowerCase();
+        if (message.includes("email") || message.includes("vérifier") || message.includes("verify")) {
+          navigate("/verify-email");
+        }
+      }
     } catch (err) {
-      toast.error("Registration failed");
+      toast.error('Invalid email or password');
     } finally {
-      setSignupLoading(false);
+      setLoginLoading(false);
     }
   };
-
-  const handleGoogleSignup = async () => {
+  const handleGoogleLogin = async () => {
     try {
-      setSignupLoading(true);
-
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-
+      setLoginLoading(true);
+      const user = await handleSignIn('google');
       const token = await user.getIdToken();
-      console.log(token);
+      
+      const response = await OAuthSignin(token, 'google');
 
-      const response = await GoogleSignup(token);
-      console.log(response);
-
-      if (response === 200) {
-        toast.success("Account created with Google!");
-        navigate("/");
+      if (response && response.data && response.data.success) {
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
       }
     } catch (error) {
       console.error(error);
-      toast.error("Google registration failed");
+      toast.error("Google authentication failed");
     } finally {
-      setSignupLoading(false);
+      setLoginLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!loading && isAuthenticated) {
-      toast.success("Account created successfully");
-      navigate("/");
-    }
-  }, [isAuthenticated, loading]);
+  const handleMicrosoftLogin = async () => {
+    try {
+      setLoginLoading(true);
+      const user = await handleSignIn('microsoft');
+      const token = await user.getIdToken();
+      
+      const response = await OAuthSignin(token, 'microsoft');
 
+      if (response && response.data && response.data.success) {
+        setToken(Cookies.get('token'));
+        toast.success('Welcome');
+        navigate('/dashboard');
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Microsoft authentication failed");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+  
   return (
     <div
-      className="
-        h-full overflow-y-auto flex items-center justify-center
+      className="  h-screen
+        flex items-center justify-center
         px-[clamp(20px,4vw,40px)]
         bg-gradient-to-br from-[var(--bg-secondary)] to-[var(--bg-tertiary)]
         transition-colors duration-300
       "
     >
-      <div className="w-full h-full max-w-[480px] ">
+      <div className="w-full max-w-[480px]">
         <div
           className="
-        my-[clamp(20px,4vw,40px)]
             bg-[var(--card-bg)]
             border border-[var(--border-color)]
             rounded-[20px]
-             px-[clamp(32px,6vw,48px)]
+            px-[clamp(32px,6vw,48px)]
             py-[clamp(12px,3vw,24px)]
             shadow-[0_20px_40px_var(--shadow-color)]
             transition-all duration-300
@@ -96,13 +110,13 @@ const SignUp: React.FC = () => {
             to="/home"
             className="
               block text-center no-underline
-              mb-[clamp(24px,5vw,40px)]
+              mb-[clamp(18px,5vw,24px)]
               transition-transform duration-300
               hover:scale-105
             "
           >
             <img
-              src="./../logo.jpg"
+              src="./../logoo.png"
               alt="SupFile"
               className="w-[clamp(120px,20vw,180px)] mx-auto object-contain"
             />
@@ -112,27 +126,14 @@ const SignUp: React.FC = () => {
           <h2
             className="
               text-center font-semibold leading-tight
-             text-[clamp(18px,4vw,20px)]
+              text-[clamp(18px,4vw,20px)]
               text-[var(--text-primary)]
               mb-[clamp(24px,5vw,28px)]
               transition-colors duration-300
             "
           >
-            Create an account
+            Sign in to your account to access your files
           </h2>
-
-          <p
-            className="
-              text-center
-              text-[clamp(14px,3vw,16px)]
-              text-[var(--text-secondary)]
-              mb-[clamp(24px,5vw,32px)]
-              leading-relaxed
-              transition-colors duration-300
-            "
-          >
-            Enter your information to create your SupFile account
-          </p>
 
           {/* Form */}
           <form
@@ -143,31 +144,6 @@ const SignUp: React.FC = () => {
             "
             onSubmit={handleSubmit}
           >
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Full Name"
-                required
-                className="
-                  w-full
-                  px-[clamp(16px,3vw,20px)]
-                  py-[clamp(14px,3vw,16px)]
-                  rounded-xl
-                  border-2 border-[var(--border-color)]
-                  bg-[var(--bg-primary)]
-                  text-[var(--text-primary)]
-                  text-[clamp(14px,3vw,16px)]
-                  outline-none
-                  transition-all duration-300
-                  focus:border-[var(--accent-color)]
-                  focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
-                  placeholder:text-[var(--text-tertiary)]
-                "
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-            </div>
-
             <div className="relative">
               <input
                 type="email"
@@ -218,34 +194,20 @@ const SignUp: React.FC = () => {
               />
             </div>
 
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Confirm your password"
-                required
-                className="
-                  w-full
-                  px-[clamp(16px,3vw,20px)]
-                  py-[clamp(14px,3vw,16px)]
-                  rounded-xl
-                  border-2 border-[var(--border-color)]
-                  bg-[var(--bg-primary)]
-                  text-[var(--text-primary)]
-                  text-[clamp(14px,3vw,16px)]
-                  outline-none
-                  transition-all duration-300
-                  focus:border-[var(--accent-color)]
-                  focus:shadow-[0_0_0_4px_rgba(59,130,246,0.1)]
-                  placeholder:text-[var(--text-tertiary)]
-                "
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+            <div className="flex justify-end">
+              <Link
+                to="/forgot-password"
+                className="text-[clamp(12px,2.5vw,14px)] font-medium text-[var(--accent-color)] hover:text-[var(--accent-hover)] transition-colors"
+                id="forgot-password-link"
+              >
+                Forgot password?
+              </Link>
             </div>
 
-            {/* Submit */}
+            {/* Submit Button */}
             <button
               type="submit"
+              disabled={loginLoading}
               className={`
                 mt-[clamp(8px,2vw,12px)]
                 rounded-xl
@@ -259,14 +221,15 @@ const SignUp: React.FC = () => {
                 hover:bg-[var(--accent-hover)]
                 hover:shadow-[0_8px_30px_rgba(59,130,246,0.4)]
                 active:translate-y-0
-                ${signupLoading && "cursor-not-allowed"}
+                ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
               `}
             >
-              {signupLoading ? (
-                <SyncLoader color="#fff" loading={signupLoading} />
+              {loginLoading ? (
+                <SyncLoader color="#fff" loading={loginLoading} />
               ) : (
-                "Create Account"
+                ' Sign In'
               )}
+
             </button>
           </form>
 
@@ -274,7 +237,7 @@ const SignUp: React.FC = () => {
           <div
             className="
               relative text-center
-               my-[clamp(18px,5vw,24px)]
+              my-[clamp(18px,5vw,24px)]
             "
           >
             <span
@@ -297,14 +260,16 @@ const SignUp: React.FC = () => {
             className="
               flex flex-wrap justify-center
               gap-[clamp(12px,3vw,16px)]
-             mb-[clamp(18px,5vw,24px)]
-              max-[480px]:gap-[clamp(8px,2vw,12px)]
+              mb-[clamp(18px,5vw,24px)]
+              max-[480px]:flex-col
             "
           >
+
             <button
-              onClick={handleGoogleSignup}
+              onClick={handleGoogleLogin}
+              disabled={loginLoading}
               key="Google"
-              className="
+              className={`
                   flex items-center justify-center space-x-1
                   px-[clamp(16px,3vw,20px)]
                   py-[clamp(12px,3vw,14px)]
@@ -319,14 +284,42 @@ const SignUp: React.FC = () => {
                   hover:-translate-y-0.5
                   hover:border-[var(--accent-color)]
                   hover:shadow-[0_4px_20px_var(--shadow-color)]
-                "
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
             >
               <GoogleIcon />
               <span>Google</span>
             </button>
+
+            <button
+              onClick={handleMicrosoftLogin}
+              disabled={loginLoading}
+              key="Microsoft"
+              className={`
+                  flex items-center justify-center space-x-1
+                  px-[clamp(16px,3vw,20px)]
+                  py-[clamp(12px,3vw,14px)]
+                  min-w-[100px] flex-1
+                  rounded-xl
+                  border-2 border-[var(--shadow-color)]
+                  bg-[var(--bg-primary)]
+                  text-[var(--text-primary)]
+                  text-[clamp(13px,2.5vw,14px)]
+                  font-medium
+                  transition-all duration-300
+                  hover:-translate-y-0.5
+                  hover:border-[var(--accent-color)]
+                  hover:shadow-[0_4px_20px_var(--shadow-color)]
+                  ${loginLoading && "cursor-not-allowed opacity-60 pointer-events-none"}
+                `}
+            >
+              <MicrosoftIcon />
+              <span>Microsoft</span>
+            </button>
+
           </div>
 
-          {/* Sign in */}
+          {/* Signup */}
           <div
             className="
               text-center
@@ -335,9 +328,9 @@ const SignUp: React.FC = () => {
               transition-colors
             "
           >
-            Already have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link
-              to="/login"
+              to="/register"
               className="
                 font-semibold
                 text-[var(--accent-color)]
@@ -346,7 +339,7 @@ const SignUp: React.FC = () => {
                 hover:underline
               "
             >
-              Sign in
+              Sign up
             </Link>
           </div>
         </div>
@@ -355,4 +348,6 @@ const SignUp: React.FC = () => {
   );
 };
 
-export default SignUp;
+export default Login;
+
+
