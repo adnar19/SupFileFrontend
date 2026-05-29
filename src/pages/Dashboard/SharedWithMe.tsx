@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { File, Folder, User, Calendar, Shield, ExternalLink, RefreshCw, Download, Trash2, Link as LinkIcon, Users, X, AlertTriangle, Eye, Lock, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PreviewModal } from '../../components/PreviewModal';
 import { 
   getSharedWithMe, 
   getMyPublicLinks, 
@@ -34,6 +35,7 @@ const SharedWithMe: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const limit = 10;
 
+  const [previewFile, setPreviewFile] = useState<{ id: string; name: string; type: 'file' | 'folder' } | null>(null);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string;
@@ -393,14 +395,14 @@ const SharedWithMe: React.FC = () => {
                     >
                       <Download className="w-5 h-5" />
                     </button>
-                    <button 
+                    <button
                       className="p-2 text-[var(--text-tertiary)] hover:text-blue-500 hover:bg-blue-500/10 rounded-xl transition-all"
                       title="Open"
                       onClick={() => {
                         if (item.type === 'folder') {
                           navigate(`/folder/${item.item.id}`);
                         } else {
-                          toast.info(`Previewing ${item.item.name}...`);
+                          setPreviewFile({ id: item.item.id, name: item.item.name, type: 'file' });
                         }
                       }}
                     >
@@ -527,6 +529,12 @@ const SharedWithMe: React.FC = () => {
       )}
       </div>
       )}
+
+      <PreviewModal
+        isOpen={!!previewFile}
+        onClose={() => setPreviewFile(null)}
+        file={previewFile}
+      />
 
       {/* Collaborators Modal */}
       {showCollabModal && (
